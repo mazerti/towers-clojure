@@ -1,0 +1,137 @@
+<head>
+    <title>Towers : Rulebook</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <h1 id="towers">Towers</h1>
+    <p><img src="assets/tower_example.jpg" /></p>
+    <p>In this 2 to 4-player strategy game, build towers to take the higher ground on your opponents and secure victory.
+    </p>
+    <p>Despite its simple rules, Towers offers captivating complexity where every action can turn into a decisive step
+        toward victory or defeat.
+        Start a 2-player game to experience the strategic tension of classical strategy games such as chess or go. Or
+        engage with 3 or 4 players to add a whole new diplomatic dimension where your words will become just as valuable
+        as your troops!</p>
+    <h3 id="contact">Contact</h3>
+    <p class="contact">
+        If you want to know more about the game or follow its development, please contact me at <a href="titouan.mazier@orange.fr">titouan.mazier@orange.fr</a> !</p>
+    <!-- <h2 id="règles-du-jeu">Rulebook</h2> -->
+    <h3 id="matériel">Contents</h3>
+    <figure>
+        <img src="assets/setup.jpg" alt="" add-border="false" />
+        <figcaption>Content of the game and setup</figcaption>
+    </figure>
+    <ul class="content">
+        <li>A 5 x 5 grid board</li>
+        <li>50 tower layers</li>
+        <li>24 pawns (6 per color)</li>
+        <li>52 flags (13 per color)</li>
+    </ul>
+    <h3 id="but-du-jeu">Objective</h3>
+    <p>
+        The goal of the game is to conquer and maintain the largest territory.
+    </p>
+    <h3 id="mise-en-place">Setup</h3>
+    <ol type="1">
+        <li>Each player chooses a color and takes its 6 pawns and as many flags as described in the table below:
+        </li>
+    </ol>
+    <table>
+        <thead>
+            <tr class="header">
+                <th style="text-align: center;">Number of players</th>
+                <th style="text-align: center;">Number of flags each player takes</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="odd">
+                <td style="text-align: center;">2</td>
+                <td style="text-align: center;">13</td>
+            </tr>
+            <tr class="even">
+                <td style="text-align: center;">3</td>
+                <td style="text-align: center;">11</td>
+            </tr>
+            <tr class="odd">
+                <td style="text-align: center;">4</td>
+                <td style="text-align: center;">9</td>
+            </tr>
+        </tbody>
+    </table>
+    <ol start="2" type="1">
+        <li>
+            Place the board in the middle of the table and ensure all players can easily access the 50 tower layers.
+        </li>
+    </ol>
+    <h3 id="début-de-la-partie">Beginning of the game</h3>
+    <p>Before starting fighting each other, the players get to choose their initial position on the board through a "push your luck"-like process.</p>
+    <p>In clockwise order, each player will have to choose between the following to options:</p>
+    <ol type="1">
+        <li> Place a tower layer on any square of the board, piling it on top of another one if needed, </li>
+    </ol>
+    <p class="or">or</p>
+    <ol start="2" type="1">
+        <li> Claim a square as its own initial position and pass until everyone has claimed an initial position. The claimed square must fulfill the two following conditions:
+            <ul class="no-content">
+                <li>Be located on the outer border of the board</li>
+                <li>Two starting squares must always be separated by at least two squares on the outer border of the board</li>
+            </ul>
+        </li>
+    </ol>
+    <p>When claiming its initial position, the player mark it by placing one of his pawns and one of his flags on it.</p>
+    <p>Repeat this step until every player but one has claimed an initial position. At that point, the last player has to choose his initial location with the same constraints.</p>
+    <p> <a class="huge">!</a> In a 2-player game, the last player to claim an initial position can place one last tower layer on the board before choosing its starting square.</p>
+    <p>When this step is completed, the game can start with the first player to have claim its initial location.</p>
+    <h3 id="déroulement-dun-tour-de-jeu">The game turn</h3>
+    <p>In clockwise order the players can at their turn take two actions among the following three:</p>
+    <ol type="1">
+        <li>Move a pawn</li>
+        <li>Build a tower layer</li>
+        <li>Spawn a pawn</li>
+    </ol>
+    <p>One player can use the same action twice in the same turn as long as it is done with two different pawns, it can also use two different actions with the same pawn.</p>
+    <p>If a player is unable to pick realize an action, he has to pick another one. If he can't do any of the three then the game ends immediately.</p>
+    <h4 id="déplacer-un-pion">1. Move a pawn</h4>
+    <p>Choose a pawn and move it according to the following rules:</p>
+    <ul>
+        <li>Pawns can be moved only toward a bordering square (no diagonal move).</li>
+        <li>You can never move a pawn onto a square where you already have one pawn.</li>
+        <li>You can conquer a square where an opponent has a pawn only if the pawn moving comes from a higher tower (see diagrams).</li>
+    </ul>
+    <figure>
+        <img src="assets/explicative_schemas.png" alt="" />
+        <figcaption>Diagrams clarifying legal moves.</figcaption>
+    </figure>
+    <p>After moving one of their pawns to a square, the player returns any flag already present on the square to its owner and capture for himself any pawn that was already present in that square.
+        Then, he places one of its flag on the square.
+    </p>
+    <h4 id="construire-un-étage-de-tour">2. Build a tower layer</h4>
+    <p>Choose one of your pawns and place a tower layer on the square occupied by the pawn.</p>
+    <h4 id="rallier-un-pion">3. Spawn a pawn</h4>
+    <p>Place one of your pawn remaining from your reserve in one of the square with one of your flags where there is no pawn already.</p>
+    <p>Once all the pawns from your reserve are spawned you are not able to use this action anymore.</p>
+    <h3 id="fin-de-la-partie">End of the game</h3>
+    <p>The game ends as soon as one of the following conditions is met:</p>
+    <ul>
+        <li>All 50 tower layers have placed</li>
+        <p class="or">or</p>
+        <li>One player have placed all of its flags</li>
+        <p class="or">or</p>
+        <li>One player is not able to play anymore</li>
+    </ul>
+    <p>Then, each player counts its points:</p>
+    <ul class="points">
+        <li> 1 point for each flag on the board.</li>
+        <li> 1 point for each opponent pawn captured.</li>
+        <!-- <li>Le joueur ayant la tour la plus haute gagne 1 point supplémentaire.</li> -->
+        <!-- <li>Le joueur disposant du plus grand nombre de pions en jeu gagne 1 point supplémentaire.</li> -->
+    </ul>
+    <p>The player with the most points win the game.</p>
+    <h3 id="variante-pour-2-joueurs">Variation for 2 players</h3>
+    <p>While playing with 2 players, you can choose to use the following variation instead of the regular game: each player picks 2 colors and play alternatively each of their colors, just if they were 4 players playing in team.
+        At the end of the game, the player with the most points with its two colors win the game.
+    </p>
+</body>
+
+</html>

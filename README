@@ -1,0 +1,5 @@
+# Towers
+
+This repository aims at reproducing a strategy board game using solely clojure and clojurescript.
+
+### [Rules of the original game](rulebook.html)
