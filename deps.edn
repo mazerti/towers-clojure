@@ -1,3 +1,5 @@
 {:deps {org.clojure/clojure   {:mvn/version "1.12.0"}
         http-kit/http-kit     {:mvn/version "2.8.0"}
-        org.clojure/data.json {:mvn/version "2.5.0"}}}
+        org.clojure/data.json {:mvn/version "2.5.0"}
+        ysera/ysera           {:git/url "https://github.com/tomas81508/ysera"
+                               :git/sha "4efb0303fafa8c7f0c34af221b017c39e1e3373d"}}}
