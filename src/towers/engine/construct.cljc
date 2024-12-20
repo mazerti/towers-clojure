@@ -207,3 +207,30 @@
             board (update-board board)
             players (assoc :players players)
             unbuilt-towers (assoc :unbuilt-towers unbuilt-towers))))
+
+
+(defn get-case
+  "Returns the case at given location."
+  {:test (fn []
+           (is= (-> (create-game :board [[2 0]
+                                         [1 3]])
+                    (get-case [1 0])
+                    (:location))
+                [1 0]))}
+  [game location]
+  (-> game
+      (:board)
+      (get location)))
+
+
+(defn get-case-attribute
+  "Returns the asked attribute of the case at given location."
+  {:test (fn []
+           (is= (-> (create-game :board [[2 0]
+                                         [1 1]])
+                    (get-case-attribute :height [0 0]))
+                2))}
+  [game attribute location]
+  (-> game
+      (get-case location)
+      (attribute)))
