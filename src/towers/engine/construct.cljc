@@ -1,6 +1,6 @@
 (ns towers.engine.construct
   "A namespace for the non-gameplay related building blocks of the game."
-  (:require [ysera.test :refer [is=]]))
+  (:require [ysera.test :refer [is is-not is=]]))
 
 
 (def default-settings
@@ -234,3 +234,15 @@
   (-> game
       (get-case location)
       (attribute)))
+
+
+(defn player-in-turn?
+  "Test if given player is currently in turn."
+  {:test (fn []
+           (is (-> (create-game :settings {:player-ids ["a" "b"]})
+                   (player-in-turn? "a")))
+           (is-not (-> (create-game :settings {:player-ids ["a" "b"]})
+                   (player-in-turn? "b"))))}
+  [state player-id]
+  (= player-id (:player-id-in-turn state)))
+
