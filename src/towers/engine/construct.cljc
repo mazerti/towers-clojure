@@ -130,14 +130,14 @@
        (into {})))
 
 
-(defn update-board
+(defn replace-board
   "Update the game's board to match the given one.
   Make sure that given board's dimensions matches the game's ones."
   {:test (fn []
            (is= (-> (create-empty-game)
-                    (update-board [[1 2 3]
-                                   [2 0 1]
-                                   [3 0 2]])
+                    (replace-board [[1 2 3]
+                                    [2 0 1]
+                                    [3 0 2]])
                     (preview-board))
                 [[1 2 3]
                  [2 0 1]
@@ -204,7 +204,7 @@
                        (if board (assoc $ :dimensions (board-dimensions board)) $)
                        (if players (assoc $ :player-ids (keys players)) $))]
     (cond-> (create-empty-game settings)
-            board (update-board board)
+            board (replace-board board)
             players (assoc :players players)
             unbuilt-towers (assoc :unbuilt-towers unbuilt-towers))))
 
@@ -242,7 +242,33 @@
            (is (-> (create-game :settings {:player-ids ["a" "b"]})
                    (player-in-turn? "a")))
            (is-not (-> (create-game :settings {:player-ids ["a" "b"]})
-                   (player-in-turn? "b"))))}
+                       (player-in-turn? "b"))))}
   [state player-id]
   (= player-id (:player-id-in-turn state)))
 
+
+(defn replace-case
+  "Update given case on the board."
+  {:test (fn []
+           (is= (-> (create-game)
+                    (replace-case (create-case [1 2] :height 2 :non-existing-key :a))
+                    (get-case [1 2]))
+                {:location         [1 2]
+                 :height           2
+                 :non-existing-key :a}))}
+  [game new-case]
+  (let [location (:location new-case)]
+    (assoc-in game [:board location] new-case)))
+
+(defn update-case
+  "Update given attribute of given case."
+  {:test (fn []
+           (let [game (create-game)]
+             (is= (-> (update-case game :height [1 2] inc)
+                      (get-case-attribute :height [1 2]))
+                  1)
+             (is= (-> (update-case game :height [2 1] + 2)
+                      (get-case-attribute :height [2 1]))
+                  2)))}
+  [game attribute location function & args]
+  (apply update-in game [:board location attribute] function args))
