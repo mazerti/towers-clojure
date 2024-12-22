@@ -127,3 +127,26 @@
         (= (second location) 0)
         (= (inc (first location)) (first dimensions))
         (= (inc (second location)) (second dimensions)))))
+
+
+(defn respects-start-distances?
+  "Checks if the given location respects the start distances.
+  (2 spaces on each side by the border)."
+  {:test (fn []
+           (let [game (create-game :board [[0 {:pawn "p2"} 0]
+                                           [0 0 0]
+                                           [0 0 0]])]
+             (is (respects-start-distances? game [2 0]))
+             (is-not (respects-start-distances? game [0 1])) ; issue: the pawn is not added to the board.
+             (is-not (respects-start-distances? game [0 0]))
+             (is-not (respects-start-distances? game [1 2]))))}
+  ([game location range]
+   (cond
+     (get-case-attribute game :pawn location) false
+     (= range 0) true
+     :default (every? true?
+                      (->> (neighbors game location)
+                           (filter (fn [l] (on-the-border? game l)))
+                           (map (fn [l] (respects-start-distances? game l (dec range))))))))
+  ([game location]
+   (respects-start-distances? game location 2)))
