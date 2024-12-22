@@ -175,3 +175,18 @@
   (and (player-in-turn? game player-id)
        (on-the-border? game location)
        (respects-start-distances? game location)))
+
+
+(defn claim-case
+  "Given player get the control of given case.
+  i.e. placing a flag in the board game."
+  {:test (fn []
+           (let [game (-> (create-game)
+                          (claim-case "p2" [2 1]))]
+             (is= (get-case-attribute game :controlled-by [2 1])
+                  "p2")
+             (is= (-> (claim-case game "p1" [2 1])
+                      (get-case-attribute :controlled-by [2 1]))
+                  "p1")))}
+  [game player-id location]
+  (update-case game :controlled-by location player-id))
