@@ -5,7 +5,7 @@
                                      get-case-attribute
                                      update-case]]
     [ysera.collections :refer [index-of]]
-    [ysera.test :refer [is is=]]))
+    [ysera.test :refer [is is-not is=]]))
 
 (defn build-tower
   "Add a tower level to the board at the given location."
@@ -19,6 +19,17 @@
                   2)))}
   [game location]
   (update-case game :height location inc))
+
+
+(defn player-in-turn?
+  "Test if given player is currently in turn."
+  {:test (fn []
+           (is (-> (create-game :settings {:player-ids ["a" "b"]})
+                   (player-in-turn? "a")))
+           (is-not (-> (create-game :settings {:player-ids ["a" "b"]})
+                       (player-in-turn? "b"))))}
+  [state player-id]
+  (= player-id (:player-id-in-turn state)))
 
 
 (defn next-player-id
