@@ -111,22 +111,41 @@
        (vec)))
 
 
+(defn case-preview->game-case
+  "Return a case whose format matches the one used to store a game.
+  Args can take the shape of either a number to represent the height or a map of key-values that will be passed on
+  to the case."
+  {:test (fn []
+           (is= (case-preview->game-case [1 2] 3)
+                (create-case [1 2] :height 3))
+           (is= (case-preview->game-case [1 2] {:height 4})
+                (create-case [1 2] :height 4))
+           (is= (case-preview->game-case [1 2] {:non-existing-key :a})
+                (create-case [1 2] :height 0 :non-existing-key :a))
+           )}
+  [location args]
+  (cond
+    (number? args) (create-case location :height args)
+    (map? args) (-> (create-case location :height 0)
+                    (into args))))
+
+
 (defn board-preview->game-board
-  "Return a board whose format matches the one used to store in a game."
+  "Return a board whose format matches the one used to store a game."
   {:test (fn []
            (is= (-> [[1 3 2]
-                     [0 4 0]]
+                     [0 {:height 4 :pawn "p1"} 0]]
                     (board-preview->game-board))
                 {[0 0] {:location [0 0] :height 1}
                  [0 1] {:location [0 1] :height 3}
                  [0 2] {:location [0 2] :height 2}
                  [1 0] {:location [1 0] :height 0}
-                 [1 1] {:location [1 1] :height 4}
+                 [1 1] {:location [1 1] :height 4 :pawn "p1"}
                  [1 2] {:location [1 2] :height 0}}))}
   [preview]
   (->> (for [[i row] (map-indexed vector preview)
-             [j height] (map-indexed vector row)]
-         {[i j] (create-case [i j] :height height)})
+             [j val] (map-indexed vector row)]
+         {[i j] (case-preview->game-case [i j] val)})
        (into {})))
 
 
