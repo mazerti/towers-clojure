@@ -150,3 +150,28 @@
                            (map (fn [l] (respects-start-distances? game l (dec range))))))))
   ([game location]
    (respects-start-distances? game location 2)))
+
+
+(defn can-pick-start?
+  "Checks if the given arguments to a pick-start action are valid."
+  {:test (fn []
+           (let [game (create-game)]
+             (is (can-pick-start? game "p1" [2 1]))
+             ; A picked case can not be picked by another player nor any case in a range of 2.
+             (is-not (can-pick-start? game "p2" [1 0]))
+             (is-not (can-pick-start? game "p2" [2 0]))
+             (is-not (can-pick-start? game "p2" [2 1]))
+             (is-not (can-pick-start? game "p2" [2 2]))
+             (is-not (can-pick-start? game "p2" [1 2])))
+           ; Can only pick a start on your turn.
+           (is-not (-> (create-game)
+                       (can-pick-start? "p2" [2 1])))
+           ; Can only pick a bordering case for start.
+           (is-not (-> (create-game)
+                       (can-pick-start? "p1" [1 1])))
+           (is-not (-> (create-game :settings {:dimensions 5})
+                       (can-pick-start? "p1" [2 1]))))}
+  [game player-id location]
+  (and (player-in-turn? game player-id)
+       (on-the-border? game location)
+       (respects-start-distances? game location)))
