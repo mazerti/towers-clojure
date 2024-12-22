@@ -277,6 +277,15 @@
                   1)
              (is= (-> (update-case game :height [2 1] + 2)
                       (get-case-attribute :height [2 1]))
-                  2)))}
-  [game attribute location function & args]
-  (apply update-in game [:board location attribute] function args))
+                  2)
+             (is= (-> (update-case game :height [1 0] 3)
+                      (get-case-attribute :height [1 0]))
+                  3)
+             (is= (-> (update-case game :non-existing-key [1 0] :a)
+                      (get-case-attribute :non-existing-key [1 0]))
+                  :a)
+             ))}
+  [game attribute location function-or-val & args]
+  (if (fn? function-or-val)
+    (apply update-in game [:board location attribute] function-or-val args)
+    (assoc-in game [:board location attribute] function-or-val)))
