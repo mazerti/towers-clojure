@@ -289,3 +289,16 @@
   (if (fn? function-or-val)
     (apply update-in game [:board location attribute] function-or-val args)
     (assoc-in game [:board location attribute] function-or-val)))
+
+
+(defn get-player
+  "Return the information of the given player."
+  {:test (fn []
+           (is= (-> (create-game)
+                    (get-player "p2"))
+                {:id "p2" :pawns 6}))}
+  [game player-id]
+  (->> game
+      (:players)
+      (filter (fn [x] (= (:id x) player-id)))
+      (first)))
