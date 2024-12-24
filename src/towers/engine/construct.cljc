@@ -299,6 +299,34 @@
                 {:id "p2" :pawns 6}))}
   [game player-id]
   (->> game
-      (:players)
-      (filter (fn [x] (= (:id x) player-id)))
-      (first)))
+       (:players)
+       (filter (fn [x] (= (:id x) player-id)))
+       (first)))
+
+
+(defn update-player
+  "Update given attribute of given player."
+  {:test (fn []
+           (is= (-> (create-game)
+                    (update-player :non-existing-key "p2" :a)
+                    (get-player "p2"))
+                {:id "p2" :pawns 6 :non-existing-key :a})
+           (is= (-> (create-game)
+                    (update-player :pawns "p2" dec)
+                    (get-player "p2"))
+                {:id "p2" :pawns 5})
+           (is= (-> (create-game)
+                    (update-player :pawns "p2" + 2)
+                    (get-player "p2"))
+                {:id "p2" :pawns 8})
+           )}
+  [game attribute player-id function-or-val & args]
+  (update game :players
+          (fn [players]
+            (map (fn [player]
+                   (if (= (:id player) player-id)
+                     (cond
+                       (fn? function-or-val) (apply update player attribute function-or-val args)
+                       :value (assoc player attribute function-or-val))
+                     player))
+                 players))))
