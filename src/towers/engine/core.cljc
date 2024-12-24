@@ -4,7 +4,9 @@
     [towers.engine.construct :refer [create-game
                                      get-case-attribute
                                      get-dimensions
-                                     update-case]]
+                                     get-player
+                                     update-case
+                                     update-player]]
     [ysera.collections :refer [index-of]]
     [ysera.test :refer [is is-not is=]]))
 
@@ -190,3 +192,30 @@
                   "p1")))}
   [game player-id location]
   (update-case game :controlled-by location player-id))
+
+
+(defn remaining-pawns
+  "Returns the number of pawn a player have in its reserve."
+  {:test (fn []
+           (is= (-> (create-game :settings {:number-of-pawns 3})
+                    (remaining-pawns "p1"))
+                3))}
+  [game player-id]
+  (-> (get-player game player-id)
+      (:pawns)))
+
+
+(defn summon-pawn
+  "Given player summon a pawn at given location."
+  {:test (fn []
+           (let [game (-> (create-game)
+                          (summon-pawn "p2" [2 1]))]
+             (is= (get-case-attribute game :pawn [2 1])
+                  "p2")
+             (is= (remaining-pawns game "p2")
+                  5)))}
+  [game player-id location]
+  (-> game
+      (update-case :pawn location player-id)
+      (update-player :pawns player-id dec)))
+
