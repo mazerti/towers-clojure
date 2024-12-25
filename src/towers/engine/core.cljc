@@ -2,10 +2,11 @@
   "A namespace for all the logic responsible for running the game."
   (:require
     [towers.engine.construct :refer [create-game
-                                     get-case-attribute
+                                     get-square-attribute
                                      get-dimensions
                                      get-player
-                                     update-case
+                                     get-player-ids
+                                     update-square
                                      update-player]]
     [ysera.collections :refer [index-of]]
     [ysera.test :refer [is is-not is=]]))
@@ -15,13 +16,13 @@
   {:test (fn []
            (let [game (-> (create-game)
                           (build-tower [1 2]))]
-             (is= (get-case-attribute game :height [1 2])
+             (is= (get-square-attribute game :height [1 2])
                   1)
              (is= (-> (build-tower game [1 2])
-                      (get-case-attribute :height [1 2]))
+                      (get-square-attribute :height [1 2]))
                   2)))}
   [game location]
-  (update-case game :height location inc))
+  (update-square game :height location inc))
 
 
 (defn player-in-turn?
@@ -85,7 +86,7 @@
 
 
 (defn neighbors
-  "Returns the locations of the cases neighboring given location."
+  "Returns the locations of the squares neighboring given location."
   {:test (fn []
            (let [game (create-game)]
              (is= (neighbors game [1 1])
@@ -144,7 +145,7 @@
              (is-not (respects-start-distances? game [1 2]))))}
   ([game location range]
    (cond
-     (get-case-attribute game :pawn location) false
+     (get-square-attribute game :pawn location) false
      (= range 0) true
      :default (every? true?
                       (->> (neighbors game location)
@@ -159,7 +160,7 @@
   {:test (fn []
            (let [game (create-game)]
              (is (can-pick-start? game "p1" [2 1]))
-             ; A picked case can not be picked by another player nor any case in a range of 2.
+             ; A picked square can not be picked by another player nor any square in a range of 2.
              (is-not (can-pick-start? game "p2" [1 0]))
              (is-not (can-pick-start? game "p2" [2 0]))
              (is-not (can-pick-start? game "p2" [2 1]))
@@ -168,7 +169,7 @@
            ; Can only pick a start on your turn.
            (is-not (-> (create-game)
                        (can-pick-start? "p2" [2 1])))
-           ; Can only pick a bordering case for start.
+           ; Can only pick a bordering square for start.
            (is-not (-> (create-game)
                        (can-pick-start? "p1" [1 1])))
            (is-not (-> (create-game :settings {:dimensions 5})
@@ -179,19 +180,19 @@
        (respects-start-distances? game location)))
 
 
-(defn claim-case
-  "Given player get the control of given case.
+(defn claim-square
+  "Given player get the control of given square.
   i.e. placing a flag in the board game."
   {:test (fn []
            (let [game (-> (create-game)
-                          (claim-case "p2" [2 1]))]
-             (is= (get-case-attribute game :controlled-by [2 1])
+                          (claim-square "p2" [2 1]))]
+             (is= (get-square-attribute game :controlled-by [2 1])
                   "p2")
-             (is= (-> (claim-case game "p1" [2 1])
-                      (get-case-attribute :controlled-by [2 1]))
+             (is= (-> (claim-square game "p1" [2 1])
+                      (get-square-attribute :controlled-by [2 1]))
                   "p1")))}
   [game player-id location]
-  (update-case game :controlled-by location player-id))
+  (update-square game :controlled-by location player-id))
 
 
 (defn remaining-pawns
@@ -210,12 +211,12 @@
   {:test (fn []
            (let [game (-> (create-game)
                           (summon-pawn "p2" [2 1]))]
-             (is= (get-case-attribute game :pawn [2 1])
+             (is= (get-square-attribute game :pawn [2 1])
                   "p2")
              (is= (remaining-pawns game "p2")
                   5)))}
   [game player-id location]
   (-> game
-      (update-case :pawn location player-id)
+      (update-square :pawn location player-id)
       (update-player :pawns player-id dec)))
 

@@ -11,10 +11,10 @@
    :number-of-pawns  6})
 
 
-(defn create-case
-  "Create a case on the board with given attributes."
+(defn create-square
+  "Create a square on the board with given attributes."
   {:test (fn []
-           (is= (create-case [0 1] :height 2 :pawn "p2")
+           (is= (create-square [0 1] :height 2 :pawn "p2")
                 {:location [0 1]
                  :height   2
                  :pawn     "p2"}))}
@@ -69,7 +69,7 @@
                                                 (first)))
                                    j (range (-> (:dimensions settings)
                                                 (second)))]
-                               {[i j] (create-case [i j])})
+                               {[i j] (create-square [i j])})
                              (into {}))
      :players           (->> (for [player-id (:player-ids settings)]
                                {:id player-id :pawns (:number-of-pawns settings)})
@@ -111,22 +111,22 @@
        (vec)))
 
 
-(defn case-preview->game-case
-  "Return a case whose format matches the one used to store a game.
+(defn square-preview->game-square
+  "Return a square whose format matches the one used to store a game.
   Args can take the shape of either a number to represent the height or a map of key-values that will be passed on
-  to the case."
+  to the square."
   {:test (fn []
-           (is= (case-preview->game-case [1 2] 3)
-                (create-case [1 2] :height 3))
-           (is= (case-preview->game-case [1 2] {:height 4})
-                (create-case [1 2] :height 4))
-           (is= (case-preview->game-case [1 2] {:non-existing-key :a})
-                (create-case [1 2] :height 0 :non-existing-key :a))
+           (is= (square-preview->game-square [1 2] 3)
+                (create-square [1 2] :height 3))
+           (is= (square-preview->game-square [1 2] {:height 4})
+                (create-square [1 2] :height 4))
+           (is= (square-preview->game-square [1 2] {:non-existing-key :a})
+                (create-square [1 2] :height 0 :non-existing-key :a))
            )}
   [location args]
   (cond
-    (number? args) (create-case location :height args)
-    (map? args) (-> (create-case location :height 0)
+    (number? args) (create-square location :height args)
+    (map? args) (-> (create-square location :height 0)
                     (into args))))
 
 
@@ -145,7 +145,7 @@
   [preview]
   (->> (for [[i row] (map-indexed vector preview)
              [j val] (map-indexed vector row)]
-         {[i j] (case-preview->game-case [i j] val)})
+         {[i j] (square-preview->game-square [i j] val)})
        (into {})))
 
 
@@ -228,12 +228,12 @@
             unbuilt-towers (assoc :unbuilt-towers unbuilt-towers))))
 
 
-(defn get-case
-  "Returns the case at given location."
+(defn get-square
+  "Returns the square at given location."
   {:test (fn []
            (is= (-> (create-game :board [[2 0]
                                          [1 3]])
-                    (get-case [1 0])
+                    (get-square [1 0])
                     (:location))
                 [1 0]))}
   [game location]
@@ -242,47 +242,47 @@
       (get location)))
 
 
-(defn get-case-attribute
-  "Returns the asked attribute of the case at given location."
+(defn get-square-attribute
+  "Returns the asked attribute of the square at given location."
   {:test (fn []
            (is= (-> (create-game :board [[2 0]
                                          [1 1]])
-                    (get-case-attribute :height [0 0]))
+                    (get-square-attribute :height [0 0]))
                 2))}
   [game attribute location]
   (-> game
-      (get-case location)
+      (get-square location)
       (attribute)))
 
 
-(defn replace-case
-  "Update given case on the board."
+(defn replace-square
+  "Update given square on the board."
   {:test (fn []
            (is= (-> (create-game)
-                    (replace-case (create-case [1 2] :height 2 :non-existing-key :a))
-                    (get-case [1 2]))
+                    (replace-square (create-square [1 2] :height 2 :non-existing-key :a))
+                    (get-square [1 2]))
                 {:location         [1 2]
                  :height           2
                  :non-existing-key :a}))}
-  [game new-case]
-  (let [location (:location new-case)]
-    (assoc-in game [:board location] new-case)))
+  [game new-square]
+  (let [location (:location new-square)]
+    (assoc-in game [:board location] new-square)))
 
-(defn update-case
-  "Update given attribute of given case."
+(defn update-square
+  "Update given attribute of given square."
   {:test (fn []
            (let [game (create-game)]
-             (is= (-> (update-case game :height [1 2] inc)
-                      (get-case-attribute :height [1 2]))
+             (is= (-> (update-square game :height [1 2] inc)
+                      (get-square-attribute :height [1 2]))
                   1)
-             (is= (-> (update-case game :height [2 1] + 2)
-                      (get-case-attribute :height [2 1]))
+             (is= (-> (update-square game :height [2 1] + 2)
+                      (get-square-attribute :height [2 1]))
                   2)
-             (is= (-> (update-case game :height [1 0] 3)
-                      (get-case-attribute :height [1 0]))
+             (is= (-> (update-square game :height [1 0] 3)
+                      (get-square-attribute :height [1 0]))
                   3)
-             (is= (-> (update-case game :non-existing-key [1 0] :a)
-                      (get-case-attribute :non-existing-key [1 0]))
+             (is= (-> (update-square game :non-existing-key [1 0] :a)
+                      (get-square-attribute :non-existing-key [1 0]))
                   :a)
              ))}
   [game attribute location function-or-val & args]
