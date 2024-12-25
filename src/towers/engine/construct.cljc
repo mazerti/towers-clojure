@@ -291,6 +291,17 @@
     (assoc-in game [:board location attribute] function-or-val)))
 
 
+(defn get-player-ids
+  "Return the list of all player ids from a game."
+  {:test (fn []
+           (is= (-> (create-game :settings {:player-ids ["a" "b" "c"]})
+                    (get-player-ids))
+                ["a" "b" "c"]))}
+  [game]
+  (->> (:players game)
+       (map :id)))
+
+
 (defn get-player
   "Return the information of the given player."
   {:test (fn []
