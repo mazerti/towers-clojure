@@ -155,6 +155,53 @@
    (respects-start-distances? game location 2)))
 
 
+(defn start-picked?
+  "Checks if given player has already picked a start.
+  Practically a player is assumed to have picked a start if they control at least one square on the board."
+  {:test (fn []
+           (let [game (create-game :board [[0 1 0 {:pawn          "p2"
+                                                   :controlled-by "p2"}]
+                                           [0 0 0 0]
+                                           [0 0 0 0]
+                                           [0 0 0 {:pawn          "p3"
+                                                   :controlled-by "p3"}]])]
+             (is-not (start-picked? game "p1"))
+             (is (start-picked? game "p2"))
+             (is (start-picked? game "p3"))))}
+  [game player-id]
+  (->> (:board game)
+       (filter (fn [[_ square]] (= (:controlled-by square) player-id)))
+       (not-empty)))
+
+
+(defn can-place-tower?
+  "Checks if the given arguments to a pick-start action are valid."
+  {:test (fn []
+           (is (-> (create-game)
+                   (can-place-tower? "p1")))
+           ; can only place a tower on your turn.
+           (is-not (-> (create-game)
+                       (can-place-tower? "p2")))
+           ; can not place a tower if all other players have picked a start.
+           (is-not (-> (create-game :settings {:player-ids ["p1"]})
+                       (can-place-tower? "p1")))
+           (is-not (-> (create-game :board [[0 1 0 {:pawn          "p2"
+                                                    :controlled-by "p2"}]
+                                            [0 0 0 0]
+                                            [0 0 0 0]
+                                            [0 0 0 {:pawn          "p3"
+                                                    :controlled-by "p3"}]])
+                       (can-place-tower? "p1")))
+           ; TODO: exception for player count = 2
+           )}
+  [game player-id]
+  (and (player-in-turn? game player-id)
+       (->> (get-player-ids game)
+            (remove (fn [id] (= id player-id)))
+            (remove (fn [id] (start-picked? game id)))
+            (not-empty))))
+
+
 (defn can-pick-start?
   "Checks if the given arguments to a pick-start action are valid."
   {:test (fn []

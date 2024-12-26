@@ -5,6 +5,7 @@
                                      get-square-attribute]]
     [towers.engine.core :refer [build-tower
                                 can-pick-start?
+                                can-place-tower?
                                 claim-square
                                 end-turn
                                 player-in-turn?
@@ -23,6 +24,8 @@
            (error? (-> (create-game)
                        (place-tower "p2" [1 2]))))}
   [game player-id square-location]
+  (when-not (can-place-tower? game player-id)
+    (error (format "Invalid play." player-id)))
   (-> game
       (build-tower square-location)
       (end-turn)))
