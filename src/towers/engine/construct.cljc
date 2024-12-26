@@ -299,7 +299,8 @@
                 ["a" "b" "c"]))}
   [game]
   (->> (:players game)
-       (map :id)))
+       (map :id)
+       (vec)))
 
 
 (defn get-player

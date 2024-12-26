@@ -36,33 +36,83 @@
   (= player-id (:player-id-in-turn state)))
 
 
+(defn start-picked?
+  "Checks if given player has already picked a start.
+  Practically a player is assumed to have picked a start if they control at least one square on the board."
+  {:test (fn []
+           (let [game (create-game :board [[0 1 0 {:pawn          "p2"
+                                                   :controlled-by "p2"}]
+                                           [0 0 0 0]
+                                           [0 0 0 0]
+                                           [0 0 0 {:pawn          "p3"
+                                                   :controlled-by "p3"}]])]
+             (is-not (start-picked? game "p1"))
+             (is (start-picked? game "p2"))
+             (is (start-picked? game "p3"))))}
+  [game player-id]
+  (->> (:board game)
+       (filter (fn [[_ square]] (= (:controlled-by square) player-id)))
+       (not-empty)))
+
+
 (defn next-player-id
-  "Return the id of the player playing after the player with given id."
+  "Return the id of the player playing after the player with given id or nil if it's the end of phase 1."
   {:test (fn []
            (let [game (create-game)]
              (is= (next-player-id game "p1") "p2")
-             (is= (next-player-id game "p3") "p1")))}
-  [game id]
-  (let [player-ids (->> (:players game)
-                        (mapv :id))]
-    (as-> player-ids $
-          (index-of $ id)
-          (inc $)
-          (if (< $ (count player-ids))
-            (get player-ids $)
-            (first player-ids)))))
+             (is= (next-player-id game "p3") "p1"))
+           ; Players that already picked a start are skipped.
+           (is= (-> (create-game :board [[0 1 0 {:pawn          "p2"
+                                                 :controlled-by "p2"}]
+                                         [0 0 0 0]
+                                         [0 0 0 0]
+                                         [0 0 0 0]])
+                    (next-player-id "p1"))
+                "p3")
+           ; End of phase 1 when all players have picked a start.
+           (is= (-> (create-game :board [[0 1 0 {:pawn          "p1"
+                                                 :controlled-by "p1"}]
+                                         [{:pawn          "p2"
+                                           :controlled-by "p2"} 0 0 0]
+                                         [0 0 0 0]
+                                         [0 0 {:pawn          "p3"
+                                               :controlled-by "p3"} 0]])
+                    (next-player-id "p1"))
+                nil))}
+  [game base-id]
+  (let [player-ids (get-player-ids game)]
+    (loop [id base-id]
+      (let [next-player-id (as-> player-ids $
+                                 (index-of $ id)
+                                 (inc $)
+                                 (if (< $ (count player-ids))
+                                   (get player-ids $)
+                                   (first player-ids)))]
+        (cond
+          (= next-player-id base-id) nil
+          (start-picked? game next-player-id) (recur next-player-id)
+          :else next-player-id)))))
 
 
 (defn end-turn
   "End the turn of the current player."
   {:test (fn []
-           (is= (-> (create-game)
+           (let [game (-> (create-game)
+                          (end-turn))]
+             (is= (:player-id-in-turn game)
+                  "p2")
+             (is= (:phase game)
+                  1)
+             )
+           ; players that already picked a start are skipped.
+           (is= (-> (create-game :board [[0 1 0 {:pawn          "p2"
+                                                 :controlled-by "p2"}]
+                                         [0 0 0 0]
+                                         [0 0 0 0]
+                                         [0 0 0 0]])
                     (end-turn)
                     (:player-id-in-turn))
-                "p2")
-           ; TODO: ensure that players that already picked a start are skipped.
-           ; TODO: When all players have picked a start, the game goes in phase 2.
-           )}
+                "p3")
   [game]
   (update game :player-id-in-turn (fn [id] (next-player-id game id))))
 
@@ -153,25 +203,6 @@
                            (map (fn [l] (respects-start-distances? game l (dec range))))))))
   ([game location]
    (respects-start-distances? game location 2)))
-
-
-(defn start-picked?
-  "Checks if given player has already picked a start.
-  Practically a player is assumed to have picked a start if they control at least one square on the board."
-  {:test (fn []
-           (let [game (create-game :board [[0 1 0 {:pawn          "p2"
-                                                   :controlled-by "p2"}]
-                                           [0 0 0 0]
-                                           [0 0 0 0]
-                                           [0 0 0 {:pawn          "p3"
-                                                   :controlled-by "p3"}]])]
-             (is-not (start-picked? game "p1"))
-             (is (start-picked? game "p2"))
-             (is (start-picked? game "p3"))))}
-  [game player-id]
-  (->> (:board game)
-       (filter (fn [[_ square]] (= (:controlled-by square) player-id)))
-       (not-empty)))
 
 
 (defn can-place-tower?
