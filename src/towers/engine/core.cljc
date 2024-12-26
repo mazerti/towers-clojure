@@ -56,7 +56,7 @@
 
 
 (defn next-player-id
-  "Return the id of the player playing after the player with given id or nil if it's the end of phase 1."
+  "Return the id of the player playing after the player with given id or nil if it's the end of beginning phase."
   {:test (fn []
            (let [game (create-game)]
              (is= (next-player-id game "p1") "p2")
@@ -69,7 +69,7 @@
                                          [0 0 0 0]])
                     (next-player-id "p1"))
                 "p3")
-           ; End of phase 1 when all players have picked a start.
+           ; End of beginning phase when all players have picked a start.
            (is= (-> (create-game :board [[0 1 0 {:pawn          "p1"
                                                  :controlled-by "p1"}]
                                          [{:pawn          "p2"
@@ -102,7 +102,7 @@
              (is= (:player-id-in-turn game)
                   "p2")
              (is= (:phase game)
-                  1)
+                  :beginning)
              )
            ; players that already picked a start are skipped.
            (is= (-> (create-game :board [[0 1 0 {:pawn          "p2"

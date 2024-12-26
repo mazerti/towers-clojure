@@ -14,7 +14,7 @@
     [ysera.test :refer [error? is is=]]))
 
 (defn place-tower
-  "During the first phase of the game, given player place one tower on given square."
+  "During the beginning phase, given player place one tower on given square."
   {:test (fn []
            (let [game (-> (create-game)
                           (place-tower "p1" [1 2]))]
@@ -32,7 +32,7 @@
 
 
 (defn pick-start
-  "During the first phase of the game, given player pick a square to be its starting location."
+  "During the beginning phase, given player pick a square to be its starting location."
   {:test (fn []
            (let [game (-> (create-game)
                           (pick-start "p1" [2 1]))]
