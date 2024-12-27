@@ -1,7 +1,8 @@
 (ns towers.engine.core
   "A namespace for all the logic responsible for running the game."
   (:require
-    [towers.engine.construct :refer [create-game
+    [towers.engine.construct :refer [apply-to-all-players
+                                     create-game
                                      get-square-attribute
                                      get-dimensions
                                      get-player
@@ -97,20 +98,35 @@
 (defn start-core-phase
   "Start the core phase."
   {:test (fn []
-           (let [game (-> (create-game :players [{:id "p2" :pawns 5}
-                                                 {:id "p3" :pawns 5}
-                                                 {:id "p1" :pawns 5}])
+           (let [game (-> (create-game :players [{:id "p1" :playing-order 2}
+                                                 {:id "p2" :playing-order 1}
+                                                 {:id "p3" :playing-order 3}])
                           (start-core-phase))]
              (is= (:phase game)
                   :core)
+             ; The order of the players have been updated
+             (is= (->> (:players game)
+                       (map :id))
+                  ["p2" "p1" "p3"])
+             ; The player in turn has been updated
              (is= (:player-id-in-turn game)
-                  "p2")))}
+                  "p2")
+             ; :playing-order attributes are removed since we don't need them anymore.
+             (is (->> (:players game)
+                      (map keys)
+                      (reduce into)
+                      (filter (fn [x] (= x :playing-order)))
+                      (empty?)))))}
   [game]
-  (-> game
-      (assoc :phase :core)
-      (assoc :player-id-in-turn (-> (:players game)
-                                    (first)
-                                    (:id)))))
+  (as-> game game
+        (assoc game :phase :core)
+        (update game :players (fn [players] (->> players
+                                                 (sort-by :playing-order)
+                                                 (vec))))
+        (apply-to-all-players game (fn [player] (dissoc player :playing-order)))
+        (assoc game :player-id-in-turn (-> (:players game)
+                                           (first)
+                                           (:id)))))
 
 
 (defn end-turn
@@ -140,9 +156,9 @@
                                                [0 0 0 0]
                                                [0 0 {:pawn          "p3"
                                                      :controlled-by "p3"} 0]]
-                                       :players [{:id "p3" :pawns 5}
-                                                 {:id "p2" :pawns 5}
-                                                 {:id "p1" :pawns 5}])
+                                       :players [{:id "p1" :playing-order 2}
+                                                 {:id "p2" :playing-order 3}
+                                                 {:id "p3" :playing-order 1}])
                           (end-turn))]
              (is= (:phase game)
                   :core)
