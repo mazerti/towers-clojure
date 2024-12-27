@@ -9,6 +9,7 @@
                                 claim-square
                                 end-turn
                                 player-in-turn?
+                                register-player-order
                                 summon-pawn]]
     [ysera.error :refer [error]]
     [ysera.test :refer [error? is is=]]))
@@ -60,4 +61,5 @@
   (-> game
       (claim-square player-id location)
       (summon-pawn player-id location)
+      (register-player-order player-id)
       (end-turn)))

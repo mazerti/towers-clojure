@@ -338,3 +338,28 @@
       (update-square :pawn location player-id)
       (update-player :pawns player-id dec)))
 
+
+(defn register-player-order
+  "Give given player a turn number.
+  The playing order in the core phase will respect the order this function is called with in the beginning phase."
+  {:test (fn []
+           (is= (-> (create-game)
+                    (register-player-order "p2")
+                    (get-player "p2")
+                    (:playing-order))
+                1)
+           (is= (-> (create-game :players [{:id "p1" :playing-order 1}
+                                           {:id "p2"}
+                                           {:id "p3"}])
+                    (register-player-order "p2")
+                    (get-player "p2")
+                    (:playing-order))
+                2)
+           )}
+  [game player-id]
+  (let [order (->> (:players game)
+                   (map :playing-order)
+                   (remove nil?)
+                   (apply max 0)
+                   (inc))]
+    (update-player game :playing-order player-id order)))
