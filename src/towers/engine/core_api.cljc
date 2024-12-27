@@ -24,11 +24,11 @@
              (is (player-in-turn? game "p2")))
            (error? (-> (create-game)
                        (place-tower "p2" [1 2]))))}
-  [game player-id square-location]
+  [game player-id location]
   (when-not (can-place-tower? game player-id)
     (error (format "Invalid play." player-id)))
   (-> game
-      (build-tower square-location)
+      (build-tower location)
       (end-turn)))
 
 
