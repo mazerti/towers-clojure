@@ -1,6 +1,6 @@
 (ns towers.engine.construct
   "A namespace for the non-gameplay related building blocks of the game."
-  (:require [ysera.test :refer [is=]]))
+  (:require [ysera.test :refer [is is=]]))
 
 
 (def default-settings
@@ -355,3 +355,24 @@
                        :value (assoc player attribute function-or-val))
                      player))
                  players))))
+
+
+(defn apply-to-all-players
+  "Apply given function to all the players in the game."
+  {:test (fn []
+           (is= (as-> (create-game) $
+                      (apply-to-all-players $ (fn [x] (assoc x :non-existing-key :a)))
+                      (:players $)
+                      (map :non-existing-key $))
+                [:a :a :a])
+           (is (as-> (create-game :players [{:id "p1" :non-existing-key :a}
+                                            {:id "p2" :non-existing-key :b}]) $
+                     (apply-to-all-players $ (fn [x] (dissoc x :non-existing-key)))
+                     (:players $)
+                     (map keys $)
+                     (reduce into $)
+                     (filter (fn [x] (= x :non-existing-key)) $)
+                     (empty? $)))
+           )}
+  [game function]
+  (update game :players (partial map function)))
