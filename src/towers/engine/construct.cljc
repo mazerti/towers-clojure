@@ -194,7 +194,8 @@
                                      [0 1 2]
                                      [1 0 1]]
                              :players [{:id "pa" :pawns 4 :non-existing-key :a}
-                                       {:id "pb" :pawns 5}]
+                                       {:id "pb" :pawns 5}
+                                       {:id "pc"}]
                              :unbuilt-towers 40
                              :phase :core)
                 {:board             {[0 0] {:location [0 0] :height 2}
@@ -207,7 +208,8 @@
                                      [2 1] {:location [2 1] :height 0}
                                      [2 2] {:location [2 2] :height 1}}
                  :players           [{:id "pa" :pawns 4 :non-existing-key :a}
-                                     {:id "pb" :pawns 5}]
+                                     {:id "pb" :pawns 5}
+                                     {:id "pc" :pawns 6}]
                  :player-id-in-turn "pa"
                  :unbuilt-towers    40
                  :phase             :core})
@@ -230,7 +232,11 @@
                        (if players (assoc $ :player-ids (map :id players)) $))]
     (cond-> (create-empty-game settings)
             board (replace-board board)
-            players (assoc :players players)
+            players (update :players (fn [base-players]
+                                       (reduce (fn [players [index player]]
+                                                 (update players index (fn [base] (into base player))))
+                                               base-players
+                                               (map-indexed vector players))))
             unbuilt-towers (assoc :unbuilt-towers unbuilt-towers)
             phase (assoc :phase phase))))
 
