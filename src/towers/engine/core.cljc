@@ -55,19 +55,19 @@
        (not-empty)))
 
 
-(defn next-player-id
+(defn get-next-player-id
   "Return the id of the player playing after the player with given id or nil if it's the end of beginning phase."
   {:test (fn []
            (let [game (create-game)]
-             (is= (next-player-id game "p1") "p2")
-             (is= (next-player-id game "p3") "p1"))
+             (is= (get-next-player-id game "p1") "p2")
+             (is= (get-next-player-id game "p3") "p1"))
            ; Players that already picked a start are skipped.
            (is= (-> (create-game :board [[0 1 0 {:pawn          "p2"
                                                  :controlled-by "p2"}]
                                          [0 0 0 0]
                                          [0 0 0 0]
                                          [0 0 0 0]])
-                    (next-player-id "p1"))
+                    (get-next-player-id "p1"))
                 "p3")
            ; End of beginning phase when all players have picked a start.
            (is= (-> (create-game :board [[0 1 0 {:pawn          "p1"
@@ -77,7 +77,7 @@
                                          [0 0 0 0]
                                          [0 0 {:pawn          "p3"
                                                :controlled-by "p3"} 0]])
-                    (next-player-id "p1"))
+                    (get-next-player-id "p1"))
                 nil))}
   [game base-id]
   (let [player-ids (get-player-ids game)]
@@ -92,6 +92,25 @@
           (= next-player-id base-id) nil
           (start-picked? game next-player-id) (recur next-player-id)
           :else next-player-id)))))
+
+
+(defn start-core-phase
+  "Start the core phase."
+  {:test (fn []
+           (let [game (-> (create-game :players [{:id "p2" :pawns 5}
+                                                 {:id "p3" :pawns 5}
+                                                 {:id "p1" :pawns 5}])
+                          (start-core-phase))]
+             (is= (:phase game)
+                  :core)
+             (is= (:player-id-in-turn game)
+                  "p2")))}
+  [game]
+  (-> game
+      (assoc :phase :core)
+      (assoc :player-id-in-turn (-> (:players game)
+                                    (first)
+                                    (:id)))))
 
 
 (defn end-turn
@@ -113,8 +132,29 @@
                     (end-turn)
                     (:player-id-in-turn))
                 "p3")
+           ; When all players have picked a start, the game goes in core phase.
+           (let [game (-> (create-game :board [[0 1 0 {:pawn          "p1"
+                                                       :controlled-by "p1"}]
+                                               [{:pawn          "p2"
+                                                 :controlled-by "p2"} 0 0 0]
+                                               [0 0 0 0]
+                                               [0 0 {:pawn          "p3"
+                                                     :controlled-by "p3"} 0]]
+                                       :players [{:id "p3" :pawns 5}
+                                                 {:id "p2" :pawns 5}
+                                                 {:id "p1" :pawns 5}])
+                          (end-turn))]
+             (is= (:phase game)
+                  :core)
+             (is= (:player-id-in-turn game)
+                  "p3")))}
   [game]
-  (update game :player-id-in-turn (fn [id] (next-player-id game id))))
+  (let [next-player-id (get-next-player-id game (:player-id-in-turn game))
+        phase (:phase game)]
+    (if (and (= phase :beginning)
+             (nil? next-player-id))
+      (start-core-phase game)
+      (assoc game :player-id-in-turn next-player-id))))
 
 
 (defn in-bound?
