@@ -43,7 +43,7 @@
                                      {:id "p3" :pawns 6}]
                  :player-id-in-turn "p1"
                  :unbuilt-towers    50
-                 :phase :beginning})
+                 :phase             :beginning})
            ; Custom settings
            (is= (create-empty-game :dimensions 2
                                    :player-ids [:a "b"]
@@ -57,7 +57,7 @@
                                      {:id "b" :pawns 5}]
                  :player-id-in-turn :a
                  :unbuilt-towers    30
-                 :phase :beginning}))}
+                 :phase             :beginning}))}
   [& settings]
   (let [settings (as-> default-settings $
                        (cond
@@ -79,7 +79,7 @@
      :player-id-in-turn (-> (:player-ids settings)
                             (first))
      :unbuilt-towers    (:number-of-towers settings)
-     :phase :beginning}))
+     :phase             :beginning}))
 
 
 (defn get-dimensions
@@ -193,8 +193,8 @@
            (is= (create-game :board [[2 0 1]
                                      [0 1 2]
                                      [1 0 1]]
-                             :players {"pa" {:pawns 4 :non-existing-key :a}
-                                       "pb" {:pawns 5}}
+                             :players [{:id "pa" :pawns 4 :non-existing-key :a}
+                                       {:id "pb" :pawns 5}]
                              :unbuilt-towers 40
                              :phase :core)
                 {:board             {[0 0] {:location [0 0] :height 2}
@@ -206,11 +206,11 @@
                                      [2 0] {:location [2 0] :height 1}
                                      [2 1] {:location [2 1] :height 0}
                                      [2 2] {:location [2 2] :height 1}}
-                 :players           {"pa" {:pawns 4 :non-existing-key :a}
-                                     "pb" {:pawns 5}}
+                 :players           [{:id "pa" :pawns 4 :non-existing-key :a}
+                                     {:id "pb" :pawns 5}]
                  :player-id-in-turn "pa"
                  :unbuilt-towers    40
-                 :phase :core})
+                 :phase             :core})
            ; changing settings
            (is= (create-game :settings {:dimensions       1
                                         :player-ids       ["a" "b"]
@@ -221,13 +221,13 @@
                                      {:id "b" :pawns 2}]
                  :player-id-in-turn "a"
                  :unbuilt-towers    12
-                 :phase :beginning}))}
+                 :phase             :beginning}))}
   [& args]
   (let [{:keys [settings board players unbuilt-towers phase]} (if args (apply assoc {} args) {})
         settings (as-> settings $
                        (into {} $)
                        (if board (assoc $ :dimensions (board-dimensions board)) $)
-                       (if players (assoc $ :player-ids (keys players)) $))]
+                       (if players (assoc $ :player-ids (map :id players)) $))]
     (cond-> (create-empty-game settings)
             board (replace-board board)
             players (assoc :players players)
