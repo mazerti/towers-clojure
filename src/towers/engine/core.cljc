@@ -19,11 +19,14 @@
                           (place-tower [1 2]))]
              (is= (get-square-attribute game :height [1 2])
                   1)
+             (is= (:unbuilt-towers game)
+                  49)
              (is= (-> (place-tower game [1 2])
                       (get-square-attribute :height [1 2]))
                   2)))}
   [game location]
-  (update-square game :height location inc))
+  (-> (update-square game :height location inc)
+      (update :unbuilt-towers dec)))
 
 
 (defn player-in-turn?
@@ -261,28 +264,28 @@
    (respects-start-distances? game location 2)))
 
 
-(defn can-place-tower?
+(defn can-spawn-tower?
   "Checks if the given arguments to a pick-start action are valid."
   {:test (fn []
            (is (-> (create-game)
-                   (can-place-tower? "p1")))
+                   (can-spawn-tower? "p1")))
            ; can only place a tower on your turn.
            (is-not (-> (create-game)
-                       (can-place-tower? "p2")))
+                       (can-spawn-tower? "p2")))
            ; can not place a tower if all other players have picked a start.
            (is-not (-> (create-game :settings {:player-ids ["p1"]})
-                       (can-place-tower? "p1")))
+                       (can-spawn-tower? "p1")))
            (is-not (-> (create-game :board [[0 1 0 {:pawn          "p2"
                                                     :controlled-by "p2"}]
                                             [0 0 0 0]
                                             [0 0 0 0]
                                             [0 0 0 {:pawn          "p3"
                                                     :controlled-by "p3"}]])
-                       (can-place-tower? "p1")))
+                       (can-spawn-tower? "p1")))
            ; TODO: exception for player count = 2
            ; Can only use the action in the beginning phase
            (is-not (-> (create-game :phase :core)
-                       (can-place-tower? "p1"))))}
+                       (can-spawn-tower? "p1"))))}
   [game player-id]
   (and (= (:phase game) :beginning)
        (player-in-turn? game player-id)
@@ -409,7 +412,9 @@
              (is-not (can-spawn-pawn? game "p1" [1 0]))
              ; Can't use the action if the player is running out of pawns
              (is-not (-> (update-player game :pawns "p1" 0)
-                         (can-spawn-pawn? "p1" [0 1])))))}
+                         (can-spawn-pawn? "p1" [0 1])))
+             ; TODO: Can't redo the very same action twice in the same turn.
+             ))}
   [game player-id location]
   (and (= (:phase game) :core)
        (player-in-turn? game player-id)
@@ -417,3 +422,29 @@
        (= (get-square-attribute game :controlled-by location) player-id)
        (> (-> (get-player game player-id)
               (:pawns)) 0)))
+
+
+(defn can-build-tower?
+  "Checks if the given arguments to a spawn-pawn action are valid."
+  {:test (fn []
+           (let [game (create-game :board [[{:controlled-by "p1" :pawn "p1" :height 1} {:controlled-by "p1"} 0]
+                                           [{:controlled-by "p2" :pawn "p2"} 0 0]
+                                           [0 0 0]]
+                                   :phase :core
+                                   :player-id-in-turn "p1")]
+             (is (can-build-tower? game "p1" [0 0]))
+             ; Can't use that action in the beginning phase
+             (is-not (-> (assoc game :phase :beginning)
+                         (can-build-tower? "p1" [0 0])))
+             ; Can't use that action if the player is not in turn
+             (is-not (can-build-tower? game "p2" [1 0]))
+             ; Can't use that action if the player don't have a pawn on the square.
+             (is-not (can-build-tower? game "p1" [0 1]))
+             (is-not (can-build-tower? game "p1" [1 0]))
+             (is-not (can-build-tower? game "p1" [1 1]))
+             ; TODO: Can't redo the very same action twice in the same turn.
+             ))}
+  [game player-id location]
+  (and (= (:phase game) :core)
+       (player-in-turn? game player-id)
+       (= (get-square-attribute game :pawn location) player-id)))

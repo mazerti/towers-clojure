@@ -6,8 +6,9 @@
                                      get-square-attribute
                                      update-player]]
     [towers.engine.core :refer [place-tower
+                                can-build-tower?
                                 can-pick-start?
-                                can-place-tower?
+                                can-spawn-tower?
                                 can-spawn-pawn?
                                 claim-square
                                 end-turn
@@ -33,7 +34,7 @@
            (error? (-> (create-game :phase :core)
                        (spawn-tower "p1" [1 2]))))}
   [game player-id location]
-  (when-not (can-place-tower? game player-id)
+  (when-not (can-spawn-tower? game player-id)
     (error "Invalid play."))
   (-> game
       (place-tower location)
@@ -103,8 +104,43 @@
              (error? (spawn-pawn game "p1" [1 0]))
              ; Can't use the action if the player is running out of pawns
              (error? (-> (update-player game :pawns "p1" 0)
-                         (spawn-pawn "p1" [0 1])))))}
+                         (spawn-pawn "p1" [0 1])))
+             ; TODO: Can't redo the very same action twice in the same turn.
+             ))}
   [game player-id location]
   (when-not (can-spawn-pawn? game player-id location)
     (error "Invalid play."))
   (summon-pawn game player-id location))
+
+
+(defn build-tower
+  "During the core phase, action of building a tower with a pawn."
+  {:test (fn []
+           (let [game (create-game :board [[{:controlled-by "p1" :pawn "p1" :height 1} {:controlled-by "p1"} 0]
+                                           [{:controlled-by "p2" :pawn "p2"} 0 0]
+                                           [0 0 0]]
+                                   :phase :core
+                                   :player-id-in-turn "p1")]
+             (let [game (build-tower game "p1" [0 0])]
+               (is= (get-square-attribute game :height [0 0])
+                    2)
+               (is= (:unbuilt-towers game)
+                    49)
+               (is (player-in-turn? game "p1"))
+               ; TODO: manage action count system.
+               )
+             ; Can't use that action in the beginning phase
+             (error? (-> (assoc game :phase :beginning)
+                         (build-tower "p1" [0 0])))
+             ; Can't use that action if the player is not in turn
+             (error? (build-tower game "p2" [1 0]))
+             ; Can't use that action if the player don't have a pawn on the square.
+             (error? (build-tower game "p1" [0 1]))
+             (error? (build-tower game "p1" [1 0]))
+             (error? (build-tower game "p1" [1 1]))
+             ; TODO: Can't redo the very same action twice in the same turn.
+             ))}
+  [game player-id location]
+  (when-not (can-build-tower? game player-id location)
+    (error "Invalid play."))
+  (place-tower game location))
