@@ -33,8 +33,8 @@
                    (player-in-turn? "a")))
            (is-not (-> (create-game :settings {:player-ids ["a" "b"]})
                        (player-in-turn? "b"))))}
-  [state player-id]
-  (= player-id (:player-id-in-turn state)))
+  [game player-id]
+  (= player-id (:player-id-in-turn game)))
 
 
 (defn start-picked?
@@ -379,3 +379,34 @@
                    (apply max 0)
                    (inc))]
     (update-player game :playing-order player-id order)))
+
+
+(defn can-spawn-pawn?
+  "Checks if the given arguments to a spawn-pawn action are valid."
+  {:test (fn []
+           (let [game (create-game :board [[{:controlled-by "p1" :pawn "p1"} {:controlled-by "p1"} 0]
+                                           [{:controlled-by "p2"} 0 0]
+                                           [0 0 0]]
+                                   :phase :core
+                                   :player-id-in-turn "p1")]
+             (is (can-spawn-pawn? game "p1" [0 1]))
+             ; Can't use that action in the beginning phase
+             (is-not (-> (assoc game :phase :beginning)
+                         (can-spawn-pawn? "p1" [0 1])))
+             ; Can't use that action if the player is not in turn
+             (is-not (can-spawn-pawn? game "p2" [0 1]))
+             ; Can't use that action on a square that is occupied
+             (is-not (can-spawn-pawn? game "p1" [0 0]))
+             ; Can't use that action on a square that is not controlled by the player
+             (is-not (can-spawn-pawn? game "p1" [0 2]))
+             (is-not (can-spawn-pawn? game "p1" [1 0]))
+             ; Can't use the action if the player is running out of pawns
+             (is-not (-> (update-player game :pawns "p1" 0)
+                         (can-spawn-pawn? "p1" [0 1])))))}
+  [game player-id location]
+  (and (= (:phase game) :core)
+       (player-in-turn? game player-id)
+       (nil? (get-square-attribute game :pawn location))
+       (= (get-square-attribute game :controlled-by location) player-id)
+       (> (-> (get-player game player-id)
+              (:pawns)) 0)))

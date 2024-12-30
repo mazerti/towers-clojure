@@ -8,6 +8,7 @@
     [towers.engine.core :refer [build-tower
                                 can-pick-start?
                                 can-place-tower?
+                                can-spawn-pawn?
                                 claim-square
                                 end-turn
                                 player-in-turn?
@@ -29,7 +30,7 @@
                        (place-tower "p2" [1 2]))))}
   [game player-id location]
   (when-not (can-place-tower? game player-id)
-    (error (format "Invalid play." player-id)))
+    (error "Invalid play."))
   (-> game
       (build-tower location)
       (end-turn)))
@@ -60,7 +61,7 @@
                        (pick-start "p1" [2 1]))))}
   [game player-id location]
   (when-not (and (can-pick-start? game player-id location))
-    (error (format "Invalid play.")))
+    (error "Invalid play."))
   (-> game
       (claim-square player-id location)
       (summon-pawn player-id location)
@@ -95,4 +96,7 @@
              ; Can't use the action if the player is running out of pawns
              (error? (-> (update-player game :pawns "p1" 0)
                          (spawn-pawn "p1" [0 1])))))}
-  [game player-id location])
+  [game player-id location]
+  (when-not (can-spawn-pawn? game player-id location)
+    (error "Invalid play."))
+  (summon-pawn game player-id location))
