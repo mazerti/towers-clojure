@@ -12,14 +12,14 @@
     [ysera.collections :refer [index-of]]
     [ysera.test :refer [is is-not is=]]))
 
-(defn build-tower
+(defn place-tower
   "Add a tower level to the board at the given location."
   {:test (fn []
            (let [game (-> (create-game)
-                          (build-tower [1 2]))]
+                          (place-tower [1 2]))]
              (is= (get-square-attribute game :height [1 2])
                   1)
-             (is= (-> (build-tower game [1 2])
+             (is= (-> (place-tower game [1 2])
                       (get-square-attribute :height [1 2]))
                   2)))}
   [game location]

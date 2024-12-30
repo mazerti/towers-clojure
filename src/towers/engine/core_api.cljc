@@ -5,7 +5,7 @@
                                      get-player
                                      get-square-attribute
                                      update-player]]
-    [towers.engine.core :refer [build-tower
+    [towers.engine.core :refer [place-tower
                                 can-pick-start?
                                 can-place-tower?
                                 can-spawn-pawn?
@@ -18,25 +18,25 @@
     [ysera.test :refer [error? is is=]]))
 
 
-(defn place-tower
+(defn spawn-tower
   "During the beginning phase, given player place one tower on given square."
   {:test (fn []
            (let [game (-> (create-game)
-                          (place-tower "p1" [1 2]))]
+                          (spawn-tower "p1" [1 2]))]
              (is= (get-square-attribute game :height [1 2])
                   1)
              (is (player-in-turn? game "p2")))
            ; Can't use the action if the player is not in turn.
            (error? (-> (create-game)
-                       (place-tower "p2" [1 2])))
+                       (spawn-tower "p2" [1 2])))
            ; Can only use the action in the beginning phase
            (error? (-> (create-game :phase :core)
-                       (place-tower "p1" [1 2]))))}
+                       (spawn-tower "p1" [1 2]))))}
   [game player-id location]
   (when-not (can-place-tower? game player-id)
     (error "Invalid play."))
   (-> game
-      (build-tower location)
+      (place-tower location)
       (end-turn)))
 
 

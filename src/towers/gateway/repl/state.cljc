@@ -9,10 +9,10 @@
   (reset! game-atom (apply towers.engine.construct/create-game params)))
 
 
-(defn place-tower!
+(defn spawn-tower!
   "During the beginning phase, given player place one tower on given square."
   [player-id location]
-  (swap! game-atom towers.engine.core-api/place-tower player-id location))
+  (swap! game-atom towers.engine.core-api/spawn-tower player-id location))
 
 
 (defn pick-start!
