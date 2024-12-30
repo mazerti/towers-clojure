@@ -26,8 +26,12 @@
              (is= (get-square-attribute game :height [1 2])
                   1)
              (is (player-in-turn? game "p2")))
+           ; Can't use the action if the player is not in turn.
            (error? (-> (create-game)
-                       (place-tower "p2" [1 2]))))}
+                       (place-tower "p2" [1 2])))
+           ; Can only use the action in the beginning phase
+           (error? (-> (create-game :phase :core)
+                       (place-tower "p1" [1 2]))))}
   [game player-id location]
   (when-not (can-place-tower? game player-id)
     (error "Invalid play."))
@@ -39,28 +43,29 @@
 (defn pick-start
   "During the beginning phase, given player pick a square to be its starting location."
   {:test (fn []
-           (let [game (-> (create-game)
-                          (pick-start "p1" [2 1]))]
+           (let [game (pick-start (create-game) "p1" [2 1])]
              (is= (get-square-attribute game :pawn [2 1])
                   "p1")
              (is= (get-square-attribute game :controlled-by [2 1])
                   "p1")
-             ; A picked square can not be picked by another player nor any square in a range of 2.
-             (error? (pick-start game "p2" [1 0]))
-             (error? (pick-start game "p2" [2 0]))
-             (error? (pick-start game "p2" [2 1]))
-             (error? (pick-start game "p2" [2 2]))
-             (error? (pick-start game "p2" [1 2])))
+             (is (player-in-turn? game "p2")))
+           ; Can only pick a start in the beginning phase
+           (error? (-> (create-game :phase :core)
+                       (pick-start "p1" [2 1])))
+           ; A picked square can not be picked by another player nor any square in a range of 2.
+           (error? (pick-start (create-game) "p2" [1 0]))
+           (error? (pick-start (create-game) "p2" [2 0]))
+           (error? (pick-start (create-game) "p2" [2 1]))
+           (error? (pick-start (create-game) "p2" [2 2]))
+           (error? (pick-start (create-game) "p2" [1 2]))
            ; Can only pick a start on your turn.
-           (error? (-> (create-game)
-                       (pick-start "p2" [2 1])))
+           (error? (pick-start (create-game) "p2" [2 1]))
            ; Can only pick a bordering square for start.
-           (error? (-> (create-game)
-                       (pick-start "p1" [1 1])))
+           (error? (pick-start (create-game) "p1" [1 1]))
            (error? (-> (create-game :settings {:dimensions 5})
                        (pick-start "p1" [2 1]))))}
   [game player-id location]
-  (when-not (and (can-pick-start? game player-id location))
+  (when-not (can-pick-start? game player-id location)
     (error "Invalid play."))
   (-> game
       (claim-square player-id location)
@@ -82,7 +87,10 @@
                     "p1")
                (is= (-> (get-player game "p1")
                         (:pawns))
-                    5))
+                    5)
+               (is (player-in-turn? game "p1"))
+               ; TODO: manage action count system.
+               )
              ; Can't use that action in the beginning phase
              (error? (-> (assoc game :phase :beginning)
                          (spawn-pawn "p1" [0 1])))

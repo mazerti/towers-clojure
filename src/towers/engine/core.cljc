@@ -280,9 +280,12 @@
                                                     :controlled-by "p3"}]])
                        (can-place-tower? "p1")))
            ; TODO: exception for player count = 2
-           )}
+           ; Can only use the action in the beginning phase
+           (is-not (-> (create-game :phase :core)
+                       (can-place-tower? "p1"))))}
   [game player-id]
-  (and (player-in-turn? game player-id)
+  (and (= (:phase game) :beginning)
+       (player-in-turn? game player-id)
        (->> (get-player-ids game)
             (remove (fn [id] (= id player-id)))
             (remove (fn [id] (start-picked? game id)))
@@ -303,13 +306,17 @@
            ; Can only pick a start on your turn.
            (is-not (-> (create-game)
                        (can-pick-start? "p2" [2 1])))
+           ; Can only pick a start in the beginning phase
+           (is-not (-> (create-game :phase :core)
+                       (can-pick-start? "p1" [2 1])))
            ; Can only pick a bordering square for start.
            (is-not (-> (create-game)
                        (can-pick-start? "p1" [1 1])))
            (is-not (-> (create-game :settings {:dimensions 5})
                        (can-pick-start? "p1" [2 1]))))}
   [game player-id location]
-  (and (player-in-turn? game player-id)
+  (and (= (:phase game) :beginning)
+       (player-in-turn? game player-id)
        (on-the-border? game location)
        (respects-start-distances? game location)))
 
