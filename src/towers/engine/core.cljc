@@ -391,6 +391,45 @@
     (update-player game :playing-order player-id order)))
 
 
+(defn is-last-action?
+  "Checks if the given action is the same as the last played action."
+  {:test (fn []
+           (is-not (-> (create-game)
+                       (is-last-action? :spawn-pawn [0 2])))
+           (let [game (create-game :board [[{:controlled-by "p1" :pawn "p1"} {:controlled-by "p1" :pawn "p1"} 0]
+                                           [{:controlled-by "p2"} 0 0]
+                                           [0 0 0]]
+                                   :phase :core
+                                   :player-id-in-turn "p1"
+                                   :last-action {:action        :spawn-pawn
+                                                 :pawn-location [0 0]})]
+             (is (is-last-action? game :spawn-pawn [0 0]))
+             (is-not (is-last-action? game :build-tower [0 1]))
+             (is-not (is-last-action? game :build-tower [2 0]))
+             (is-not (is-last-action? game :move-pawn [2 0])))
+           (is (-> (create-game :board [[{:controlled-by "p1" :pawn "p1"} {:controlled-by "p1" :pawn "p1"} 0]
+                                        [{:controlled-by "p2"} 0 0]
+                                        [0 0 0]]
+                                :phase :core
+                                :player-id-in-turn "p1"
+                                :last-action {:action        :build-tower
+                                              :pawn-location [0 0]})
+                   (is-last-action? :build-tower [0 0])))
+           (is (-> (create-game :board [[{:controlled-by "p1" :pawn "p1"} {:controlled-by "p1" :pawn "p1"} 0]
+                                        [{:controlled-by "p2" :pawn "p2"} 0 0]
+                                        [0 0 0]]
+                                :phase :core
+                                :player-id-in-turn "p1"
+                                :last-action {:action        :move-pawn
+                                              :pawn-location [0 0]})
+                   (is-last-action? :move-pawn [0 0]))))}
+  [game action pawn-location]
+  (let [last-action (:last-action game)]
+    (println last-action)
+    (and (= (:action last-action) action)
+         (= (:pawn-location last-action) pawn-location))))
+
+
 (defn can-spawn-pawn?
   "Checks if the given arguments to a spawn-pawn action are valid."
   {:test (fn []
