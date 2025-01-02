@@ -3,6 +3,7 @@
   (:require
     [towers.engine.construct :refer [create-game
                                      get-player
+                                     get-square
                                      get-square-attribute
                                      update-player]]
     [towers.engine.core :refer [place-tower
@@ -113,9 +114,9 @@
   (when-not (can-spawn-pawn? game player-id location)
     (error "Invalid play."))
   (as-> (summon-pawn game player-id location) $
-      (if (:last-action $)
-        (end-turn $)
-        (register-last-action $ :spawn-pawn location))))
+        (if (:last-action $)
+          (end-turn $)
+          (register-last-action $ :spawn-pawn location))))
 
 
 (defn build-tower
@@ -154,3 +155,69 @@
         (if (:last-action $)
           (end-turn $)
           (register-last-action $ :build-tower location))))
+
+
+(defn move-pawn
+  "During the core phase, action of moving a pawn."
+  {:test (fn []
+           (let [game (create-game :board [[0 {:controlled-by "p1" :pawn "p1"} 0]
+                                           [{:controlled-by "p2" :height 4} {:controlled-by "p1" :pawn "p1" :height 2} {:controlled-by "p2" :pawn "p2" :height 2}]
+                                           [0 {:controlled-by "p2" :pawn "p2"} {:controlled-by "p1"}]
+                                           [0 0 0]]
+                                   :phase :core
+                                   :player-id-in-turn "p1")]
+             ; Moving a pawn into a free space
+             (let [game (move-pawn game "p1" [0 1] [0 2])]
+               ; The pawn is removed from the starting square
+               (is (->> (get-square game [0 1])
+                        (keys)
+                        (filter (partial = :pawn))
+                        (empty?)))
+               ; The pawn is present on the target square
+               (is= (get-square-attribute game :pawn [0 2])
+                    "p1")
+               ; The starting square is still controlled by the player
+               (is= (get-square-attribute game :controlled-by [0 1])
+                    "p1")
+               ; The target square is now controlled by the player
+               (is= (get-square-attribute game :controlled-by [0 2])
+                    "p1")
+               (is (player-in-turn? game "p1"))
+               (is= (:last-action game)
+                    {:action        :move-pawn
+                     :pawn-location [0 2]})
+               ; Can't redo the very same action twice in the same turn.
+               (error? (move-pawn game "p1" [0 1] [0 2])))
+             ; Moving a pawn into a non-defended square
+             (let [game (move-pawn game "p1" [1 1] [1 0])]
+               (is= (get-square-attribute game :pawn [1 0])
+                    "p1")
+               (is= (get-square-attribute game :controlled-by [1 0])
+                    "p1"))
+             ; Moving a pawn into a lower defended square
+             (let [game (move-pawn game "p1" [1 1] [2 1])]
+               (is= (get-square-attribute game :pawn [2 1])
+                    "p1")
+               (is= (get-square-attribute game :controlled-by [2 1])
+                    "p1")
+               (is= (-> (get-player game "p1")
+                        (:captured-pawn))
+                    {"p2" 1}))
+             ; Can't move into a non-lower defended square
+             (error? (move-pawn game "p1" [1 1] [1 2]))
+             ; Can't move into a square occupied by an allied pawn
+             (error? (move-pawn game "p1" [1 1] [0 1]))
+
+             ; Can't move into a non-adjacent square
+             (error? (move-pawn game "p1" [1 1] [0 0]))
+             (error? (move-pawn game "p1" [1 1] [3 1]))
+             ; Can't use that action in the beginning phase
+             (error? (-> (assoc game :phase :beginning)
+                         (move-pawn "p1" [0 1] [0 2])))
+             ; Can't use that action if the player is not in turn
+             (error? (move-pawn game "p2" [1 2] [0 2]))
+             ; Can't use that action if the player don't have a pawn on the square.
+             (error? (move-pawn game "p1" [2 0] [3 0]))
+             (error? (move-pawn game "p1" [1 0] [2 0]))
+             (error? (move-pawn game "p1" [2 2] [3 2]))))}
+  [game player-id from to])
