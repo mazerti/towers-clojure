@@ -197,7 +197,9 @@
                                        {:id "pb" :pawns 5}
                                        {:id "pc"}]
                              :unbuilt-towers 40
-                             :phase :core)
+                             :phase :core
+                             :last-action {:action        :spawn-pawn
+                                           :pawn-location [0 1]})
                 {:board             {[0 0] {:location [0 0] :height 2}
                                      [0 1] {:location [0 1] :height 0}
                                      [0 2] {:location [0 2] :height 1}
@@ -212,7 +214,9 @@
                                      {:id "pc" :pawns 6}]
                  :player-id-in-turn "pa"
                  :unbuilt-towers    40
-                 :phase             :core})
+                 :phase             :core
+                 :last-action       {:action        :spawn-pawn
+                                     :pawn-location [0 1]}})
            ; changing settings
            (is= (create-game :settings {:dimensions       1
                                         :player-ids       ["a" "b"]
@@ -225,20 +229,21 @@
                  :unbuilt-towers    12
                  :phase             :beginning}))}
   [& args]
-  (let [{:keys [settings board players unbuilt-towers phase]} (if args (apply assoc {} args) {})
+  (let [{:keys [settings board players] :as kvs} (if args (apply assoc {} args) {})
+        other-kvs (apply dissoc kvs [:settings :board :players])
         settings (as-> settings $
                        (into {} $)
                        (if board (assoc $ :dimensions (board-dimensions board)) $)
                        (if players (assoc $ :player-ids (map :id players)) $))]
-    (cond-> (create-empty-game settings)
-            board (replace-board board)
-            players (update :players (fn [base-players]
-                                       (reduce (fn [players [index player]]
-                                                 (update players index (fn [base] (into base player))))
-                                               base-players
-                                               (map-indexed vector players))))
-            unbuilt-towers (assoc :unbuilt-towers unbuilt-towers)
-            phase (assoc :phase phase))))
+    (as-> (create-empty-game settings) $
+          (reduce (fn [acc [k v]] (assoc acc k v)) $ other-kvs)
+          (cond-> $
+                  board (replace-board board)
+                  players (update :players (fn [base-players]
+                                             (reduce (fn [players [index player]]
+                                                       (update players index (fn [base] (into base player))))
+                                                     base-players
+                                                     (map-indexed vector players))))))))
 
 
 (defn get-square
