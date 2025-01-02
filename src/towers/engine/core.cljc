@@ -430,6 +430,17 @@
          (= (:pawn-location last-action) pawn-location))))
 
 
+(defn register-last-action
+  "Memorize the last action taken so that it can not be done twice."
+  {:test (fn []
+           (is (-> (create-game :phase :core)
+                   (register-last-action :spawn-pawn [0 1])
+                   (is-last-action? :spawn-pawn [0 1]))))}
+  [game action pawn-location]
+  (assoc game :last-action {:action        action
+                            :pawn-location pawn-location}))
+
+
 (defn can-spawn-pawn?
   "Checks if the given arguments to a spawn-pawn action are valid."
   {:test (fn []
