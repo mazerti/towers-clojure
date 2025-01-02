@@ -442,6 +442,10 @@
              ; Can't use that action in the beginning phase
              (is-not (-> (assoc game :phase :beginning)
                          (can-spawn-pawn? "p1" [0 1])))
+             ; Can't redo the very same action twice in the same turn.
+             (is-not (-> (assoc game :last-action {:action        :spawn-pawn
+                                                   :pawn-location [0 1]})
+                         (can-spawn-pawn? "p1" [0 1])))
              ; Can't use that action if the player is not in turn
              (is-not (can-spawn-pawn? game "p2" [0 1]))
              ; Can't use that action on a square that is occupied
@@ -451,11 +455,10 @@
              (is-not (can-spawn-pawn? game "p1" [1 0]))
              ; Can't use the action if the player is running out of pawns
              (is-not (-> (update-player game :pawns "p1" 0)
-                         (can-spawn-pawn? "p1" [0 1])))
-             ; TODO: Can't redo the very same action twice in the same turn.
-             ))}
+                         (can-spawn-pawn? "p1" [0 1])))))}
   [game player-id location]
   (and (= (:phase game) :core)
+       (not (is-last-action? game :spawn-pawn location))
        (player-in-turn? game player-id)
        (nil? (get-square-attribute game :pawn location))
        (= (get-square-attribute game :controlled-by location) player-id)
@@ -468,22 +471,25 @@
   {:test (fn []
            (let [game (create-game :board [[{:controlled-by "p1" :pawn "p1" :height 1} {:controlled-by "p1"} 0]
                                            [{:controlled-by "p2" :pawn "p2"} 0 0]
-                                           [0 0 0]]
+                                           [{:controlled-by "p1" :pawn "p1" :height 2} 0 0]]
                                    :phase :core
                                    :player-id-in-turn "p1")]
              (is (can-build-tower? game "p1" [0 0]))
              ; Can't use that action in the beginning phase
              (is-not (-> (assoc game :phase :beginning)
                          (can-build-tower? "p1" [0 0])))
+             ; Can't redo the very same action twice in the same turn.
+             (is-not (-> (assoc game :last-action {:action        :build-tower
+                                                   :pawn-location [0 0]})
+                         (can-build-tower? "p1" [0 0])))
              ; Can't use that action if the player is not in turn
              (is-not (can-build-tower? game "p2" [1 0]))
              ; Can't use that action if the player don't have a pawn on the square.
              (is-not (can-build-tower? game "p1" [0 1]))
              (is-not (can-build-tower? game "p1" [1 0]))
-             (is-not (can-build-tower? game "p1" [1 1]))
-             ; TODO: Can't redo the very same action twice in the same turn.
-             ))}
+             (is-not (can-build-tower? game "p1" [1 1]))))}
   [game player-id location]
   (and (= (:phase game) :core)
+       (not (is-last-action? game :build-tower location))
        (player-in-turn? game player-id)
        (= (get-square-attribute game :pawn location) player-id)))
