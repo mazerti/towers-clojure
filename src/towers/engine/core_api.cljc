@@ -14,6 +14,7 @@
                                 end-turn
                                 player-in-turn?
                                 register-player-order
+                                register-last-action
                                 summon-pawn]]
     [ysera.error :refer [error]]
     [ysera.test :refer [error? is is=]]))
@@ -90,8 +91,11 @@
                         (:pawns))
                     5)
                (is (player-in-turn? game "p1"))
-               ; TODO: manage action count system.
-               )
+               (is= (:last-action game)
+                    {:action        :spawn-pawn
+                     :pawn-location [0 1]})
+               ; Can't redo the very same action twice in the same turn.
+               (error? (spawn-pawn game "p1" [0 1])))
              ; Can't use that action in the beginning phase
              (error? (-> (assoc game :phase :beginning)
                          (spawn-pawn "p1" [0 1])))
@@ -104,13 +108,14 @@
              (error? (spawn-pawn game "p1" [1 0]))
              ; Can't use the action if the player is running out of pawns
              (error? (-> (update-player game :pawns "p1" 0)
-                         (spawn-pawn "p1" [0 1])))
-             ; TODO: Can't redo the very same action twice in the same turn.
-             ))}
+                         (spawn-pawn "p1" [0 1])))))}
   [game player-id location]
   (when-not (can-spawn-pawn? game player-id location)
     (error "Invalid play."))
-  (summon-pawn game player-id location))
+  (as-> (summon-pawn game player-id location) $
+      (if (:last-action $)
+        (end-turn $)
+        (register-last-action $ :spawn-pawn location))))
 
 
 (defn build-tower
@@ -127,8 +132,11 @@
                (is= (:unbuilt-towers game)
                     49)
                (is (player-in-turn? game "p1"))
-               ; TODO: manage action count system.
-               )
+               (is= (:last-action game)
+                    {:action        :build-tower
+                     :pawn-location [0 0]})
+               ; Can't redo the very same action twice in the same turn.
+               (error? (build-tower game "p1" [0 0])))
              ; Can't use that action in the beginning phase
              (error? (-> (assoc game :phase :beginning)
                          (build-tower "p1" [0 0])))
@@ -138,9 +146,11 @@
              (error? (build-tower game "p1" [0 1]))
              (error? (build-tower game "p1" [1 0]))
              (error? (build-tower game "p1" [1 1]))
-             ; TODO: Can't redo the very same action twice in the same turn.
              ))}
   [game player-id location]
   (when-not (can-build-tower? game player-id location)
     (error "Invalid play."))
-  (place-tower game location))
+  (as-> (place-tower game location) $
+        (if (:last-action $)
+          (end-turn $)
+          (register-last-action $ :build-tower location))))
