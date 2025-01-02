@@ -135,13 +135,13 @@
 (defn end-turn
   "End the turn of the current player."
   {:test (fn []
+           ; Beginning phase
            (let [game (-> (create-game)
                           (end-turn))]
              (is= (:player-id-in-turn game)
                   "p2")
              (is= (:phase game)
-                  :beginning)
-             )
+                  :beginning))
            ; players that already picked a start are skipped.
            (is= (-> (create-game :board [[0 1 0 {:pawn          "p2"
                                                  :controlled-by "p2"}]
@@ -166,14 +166,32 @@
              (is= (:phase game)
                   :core)
              (is= (:player-id-in-turn game)
-                  "p3")))}
+                  "p3"))
+
+           ; Core Phase
+           (let [game (-> (create-game :phase :core
+                                       :player-id-in-turn "p1"
+                                       :last-action {:action        :spawn-pawn
+                                                     :pawn-location [0 1]})
+                          (end-turn))]
+             (is= (:player-id-in-turn game)
+                  "p2")
+             (is= (:phase game)
+                  :core)
+             ; Remove the last-action attribute.
+             (is (->> (keys game)
+                      (filter (partial = :last-action))
+                      (empty?))))
+           )}
   [game]
   (let [next-player-id (get-next-player-id game (:player-id-in-turn game))
         phase (:phase game)]
     (if (and (= phase :beginning)
              (nil? next-player-id))
       (start-core-phase game)
-      (assoc game :player-id-in-turn next-player-id))))
+      (-> game
+          (assoc :player-id-in-turn next-player-id)
+          (dissoc :last-action)))))
 
 
 (defn in-bound?
@@ -425,7 +443,6 @@
                    (is-last-action? :move-pawn [0 0]))))}
   [game action pawn-location]
   (let [last-action (:last-action game)]
-    (println last-action)
     (and (= (:action last-action) action)
          (= (:pawn-location last-action) pawn-location))))
 
