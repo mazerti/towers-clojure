@@ -458,6 +458,69 @@
                             :pawn-location pawn-location}))
 
 
+(defn adjacent?
+  "Checks if two given location are adjacents"
+  {:test (fn []
+           (is (adjacent? [1 0] [1 1]))
+           (is (adjacent? [1 0] [0 0]))
+           (is-not (adjacent? [1 0] [0 1]))
+           (is-not (adjacent? [1 0] [0 2])))}
+  [location1 location2]
+  (= (->> (mapv - location1 location2)
+          (map abs)
+          (apply +))
+     1))
+
+
+(defn is-square-accessible-from
+  "Checks if given square is accessible by given player from a given location."
+  {:test (fn []
+           (let [game (create-game :board [[{:pawn "p1"} 2 0]
+                                           [{:pawn "p2" :height 1} {:pawn "p1" :height 2} {:pawn "p1"}]
+                                           [0 {:pawn "p2" :height 3} 0]])]
+             ; Can access lower squares without a friendly pawn on it
+             (is (is-square-accessible-from game "p2" [2 1] [2 0]))
+             (is (is-square-accessible-from game "p2" [2 1] [1 1]))
+             (is (is-square-accessible-from game "p2" [2 1] [2 2]))
+             ; Can not access higher squares with a pawn on it
+             (is-not (is-square-accessible-from game "p2" [1 0] [1 1]))
+             ; Can not access squares with a friendly pawn on it
+             (is-not (is-square-accessible-from game "p1" [1 1] [1 2]))))}
+  [game player-id from to]
+  (let [defending-pawn (get-square-attribute game :pawn to)]
+    (or (not defending-pawn)
+        (and (not= defending-pawn player-id)
+             (> (get-square-attribute game :height from)
+                (get-square-attribute game :height to))))))
+
+
+(defn accessible-squares-from
+  "Returns the list of locations that can be accessed by given player from a given location."
+  {:test (fn []
+           (let [game (create-game :board [[{:pawn "p1"} 2 0]
+                                           [{:pawn "p2" :height 1} {:pawn "p1" :height 2} {:pawn "p1"}]
+                                           [0 {:pawn "p2" :height 3} 0]])]
+             ; Does only return squares in range.
+             (is= (-> (accessible-squares-from game "p1" [0 0])
+                      (sort))
+                  [[0 1]])
+             ; Can not access higher squares with a pawn on it
+             (is= (-> (accessible-squares-from game "p2" [1 0])
+                      (sort))
+                  [[0 0] [2 0]])
+             ; Can not access squares with a friendly pawn on it
+             (is= (-> (accessible-squares-from game "p1" [1 1])
+                      (sort))
+                  [[0 1] [1 0]])
+             ; Can access lower squares with a non-friendly pawn on it
+             (is= (-> (accessible-squares-from game "p2" [2 1])
+                      (sort))
+                  [[1 1] [2 0] [2 2]])))}
+  [game player-id starting-location]
+  (->> (neighbors game starting-location)
+       (filter (fn [to] (is-square-accessible-from game player-id starting-location to)))))
+
+
 (defn can-spawn-pawn?
   "Checks if the given arguments to a spawn-pawn action are valid."
   {:test (fn []
@@ -495,7 +558,7 @@
 
 
 (defn can-build-tower?
-  "Checks if the given arguments to a spawn-pawn action are valid."
+  "Checks if the given arguments to a build-tower action are valid."
   {:test (fn []
            (let [game (create-game :board [[{:controlled-by "p1" :pawn "p1" :height 1} {:controlled-by "p1"} 0]
                                            [{:controlled-by "p2" :pawn "p2"} 0 0]
@@ -506,18 +569,65 @@
              ; Can't use that action in the beginning phase
              (is-not (-> (assoc game :phase :beginning)
                          (can-build-tower? "p1" [0 0])))
+             ; Can't use that action if the player is not in turn
+             (is-not (can-build-tower? game "p2" [1 0]))
              ; Can't redo the very same action twice in the same turn.
              (is-not (-> (assoc game :last-action {:action        :build-tower
                                                    :pawn-location [0 0]})
                          (can-build-tower? "p1" [0 0])))
-             ; Can't use that action if the player is not in turn
-             (is-not (can-build-tower? game "p2" [1 0]))
              ; Can't use that action if the player don't have a pawn on the square.
              (is-not (can-build-tower? game "p1" [0 1]))
              (is-not (can-build-tower? game "p1" [1 0]))
              (is-not (can-build-tower? game "p1" [1 1]))))}
   [game player-id location]
   (and (= (:phase game) :core)
-       (not (is-last-action? game :build-tower location))
        (player-in-turn? game player-id)
+       (not (is-last-action? game :build-tower location))
        (= (get-square-attribute game :pawn location) player-id)))
+
+
+(defn can-move-pawn?
+  "Checks if the given arguments to a move-pawn action are valid."
+  {:test (fn []
+           (let [game (create-game :board [[{:controlled-by "p1" :pawn "p1"} {:controlled-by "p1" :pawn "p1" :height 1} 0]
+                                           [{:controlled-by "p2" :height 4} {:controlled-by "p1" :pawn "p1" :height 2} {:controlled-by "p2" :pawn "p2" :height 2}]
+                                           [0 {:controlled-by "p2" :pawn "p2"} {:controlled-by "p1"}]
+                                           [0 0 0]]
+                                   :phase :core
+                                   :player-id-in-turn "p1")]
+             ; Can move a pawn into a free space
+             (is (can-move-pawn? game "p1" [0 1] [0 2]))
+             ; Can move a pawn into a non-defended square
+             (is (can-move-pawn? game "p1" [1 1] [1 0]))
+             ; Can move a pawn into a lower defended square
+             (is (can-move-pawn? game "p1" [1 1] [2 1]))
+             ; Can't use that action in the beginning phase
+             (is-not (-> (assoc game :phase :beginning)
+                         (can-move-pawn? "p1" [0 1] [0 2])))
+             ; Can't use that action if the player is not in turn
+             (is-not (can-move-pawn? game "p2" [1 2] [0 2]))
+             ; Can't redo the very same action twice in the same turn.
+             (is-not (-> (assoc game :last-action {:action        :move-pawn
+                                                   :pawn-location [0 1]})
+                         (can-move-pawn? "p1" [0 1] [0 2])))
+             ; Can't use that action if the player don't have a pawn on the square.
+             (is-not (can-move-pawn? game "p1" [2 0] [3 0]))
+             (is-not (can-move-pawn? game "p1" [1 0] [2 0]))
+             (is-not (can-move-pawn? game "p1" [2 2] [3 2]))
+             ; Can't move into a non-adjacent square
+             (is-not (can-move-pawn? game "p1" [1 1] [1 1]))
+             (is-not (can-move-pawn? game "p1" [1 1] [0 2]))
+             (is-not (can-move-pawn? game "p1" [1 1] [3 1]))
+             ; Can't move into a square occupied by a friendly pawn
+             (is-not (can-move-pawn? game "p1" [0 1] [0 0]))
+             ; Can't move into a non-lower defended square
+             (is-not (can-move-pawn? game "p1" [1 1] [1 2]))
+             ; Can't move into a square occupied by an allied pawn
+             (is-not (can-move-pawn? game "p1" [1 1] [0 1]))))}
+  [game player-id from to]
+  (and (= (:phase game) :core)
+       (player-in-turn? game player-id)
+       (not (is-last-action? game :move-pawn from))
+       (= (get-square-attribute game :pawn from) player-id)
+       (adjacent? from to)
+       (is-square-accessible-from game player-id from to)))
