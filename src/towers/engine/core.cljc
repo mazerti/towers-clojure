@@ -696,3 +696,20 @@
       (-> game
           (dissoc-square-attribute :pawn location)
           (add-to-captures player-id captured-pawn)))))
+
+
+(defn change-pawn-position
+  "Move pawn from given player from given square to given destination.
+  Note that this function would replace any pawn present on the destination.
+  To be precise, this function removes the pawn at from and place one of given player's pawn at the destination"
+  {:test (fn []
+           (let [game (-> (create-game :board [[{:controlled-by "p1" :pawn "p1"} 0]])
+                          (change-pawn-position "p1" [0 0] [0 1]))]
+             (is-not (-> (get-square game [0 0])
+                         (contains? :pawn)))
+             (is= (get-square-attribute game :pawn [0 1])
+                  "p1")))}
+  [game player-id from to]
+  (-> game
+      (dissoc-square-attribute :pawn from)
+      (update-square :pawn to player-id)))
