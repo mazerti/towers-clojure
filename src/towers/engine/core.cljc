@@ -179,21 +179,91 @@
              (is= (:player-id-in-turn game)
                   "p2")
              (is= (:phase game)
-                  :core)
-             ; Remove the last-action attribute.
-             (is (->> (keys game)
-                      (filter (partial = :last-action))
-                      (empty?))))
-           )}
+                  :core)))}
   [game]
   (let [next-player-id (get-next-player-id game (:player-id-in-turn game))
         phase (:phase game)]
     (if (and (= phase :beginning)
              (nil? next-player-id))
       (start-core-phase game)
-      (-> game
-          (assoc :player-id-in-turn next-player-id)
-          (dissoc :last-action)))))
+      (assoc game :player-id-in-turn next-player-id))))
+
+
+(defn is-last-action?
+  "Checks if the given action is the same as the last played action."
+  {:test (fn []
+           (is-not (-> (create-game)
+                       (is-last-action? :spawn-pawn [0 2])))
+           (let [game (create-game :board [[{:controlled-by "p1" :pawn "p1"} {:controlled-by "p1" :pawn "p1"} 0]
+                                           [{:controlled-by "p2"} 0 0]
+                                           [0 0 0]]
+                                   :phase :core
+                                   :player-id-in-turn "p1"
+                                   :last-action {:action        :spawn-pawn
+                                                 :pawn-location [0 0]})]
+             (is (is-last-action? game :spawn-pawn [0 0]))
+             (is-not (is-last-action? game :build-tower [0 1]))
+             (is-not (is-last-action? game :build-tower [2 0]))
+             (is-not (is-last-action? game :move-pawn [2 0])))
+           (is (-> (create-game :board [[{:controlled-by "p1" :pawn "p1"} {:controlled-by "p1" :pawn "p1"} 0]
+                                        [{:controlled-by "p2"} 0 0]
+                                        [0 0 0]]
+                                :phase :core
+                                :player-id-in-turn "p1"
+                                :last-action {:action        :build-tower
+                                              :pawn-location [0 0]})
+                   (is-last-action? :build-tower [0 0])))
+           (is (-> (create-game :board [[{:controlled-by "p1" :pawn "p1"} {:controlled-by "p1" :pawn "p1"} 0]
+                                        [{:controlled-by "p2" :pawn "p2"} 0 0]
+                                        [0 0 0]]
+                                :phase :core
+                                :player-id-in-turn "p1"
+                                :last-action {:action        :move-pawn
+                                              :pawn-location [0 0]})
+                   (is-last-action? :move-pawn [0 0]))))}
+  [game action pawn-location]
+  (let [last-action (:last-action game)]
+    (and (= (:action last-action) action)
+         (= (:pawn-location last-action) pawn-location))))
+
+
+(defn register-last-action
+  "Memorize the last action taken so that it can not be done twice."
+  {:test (fn []
+           (is (-> (create-game :phase :core)
+                   (register-last-action :spawn-pawn [0 1])
+                   (is-last-action? :spawn-pawn [0 1]))))}
+  [game action pawn-location]
+  (assoc game :last-action {:action        action
+                            :pawn-location pawn-location}))
+
+
+(defn end-action
+  "End a player's action, registering it or ending the turn depending
+  on if the action was the first or the second this turn."
+  {:test (fn []
+           (let [game (-> (create-game :phase :core
+                                       :player-id-in-turn "p1")
+                          (end-action :spawn-pawn [0 0]))]
+             (is= (:player-id-in-turn game)
+                  "p1")
+             ; Register the resolved action
+             (is-last-action? game :spawn-pawn [0 0]))
+           (let [game (-> (create-game :phase :core
+                                       :player-id-in-turn "p1"
+                                       :last-action {:action        :spawn-pawn
+                                                     :pawn-location [0 1]})
+                          (end-action :spawn-pawn [0 0]))]
+             (is= (:player-id-in-turn game)
+                  "p2")
+             ; Remove the last-action attribute.
+             (is-not (contains? game :last-action))))}
+  [game action end-location]
+  (if (:last-action game)
+    (-> game
+        (end-turn)
+        (dissoc :last-action))
+    (register-last-action game action end-location)))
 
 
 (defn in-bound?
@@ -409,55 +479,6 @@
                    (apply max 0)
                    (inc))]
     (update-player game :playing-order player-id order)))
-
-
-(defn is-last-action?
-  "Checks if the given action is the same as the last played action."
-  {:test (fn []
-           (is-not (-> (create-game)
-                       (is-last-action? :spawn-pawn [0 2])))
-           (let [game (create-game :board [[{:controlled-by "p1" :pawn "p1"} {:controlled-by "p1" :pawn "p1"} 0]
-                                           [{:controlled-by "p2"} 0 0]
-                                           [0 0 0]]
-                                   :phase :core
-                                   :player-id-in-turn "p1"
-                                   :last-action {:action        :spawn-pawn
-                                                 :pawn-location [0 0]})]
-             (is (is-last-action? game :spawn-pawn [0 0]))
-             (is-not (is-last-action? game :build-tower [0 1]))
-             (is-not (is-last-action? game :build-tower [2 0]))
-             (is-not (is-last-action? game :move-pawn [2 0])))
-           (is (-> (create-game :board [[{:controlled-by "p1" :pawn "p1"} {:controlled-by "p1" :pawn "p1"} 0]
-                                        [{:controlled-by "p2"} 0 0]
-                                        [0 0 0]]
-                                :phase :core
-                                :player-id-in-turn "p1"
-                                :last-action {:action        :build-tower
-                                              :pawn-location [0 0]})
-                   (is-last-action? :build-tower [0 0])))
-           (is (-> (create-game :board [[{:controlled-by "p1" :pawn "p1"} {:controlled-by "p1" :pawn "p1"} 0]
-                                        [{:controlled-by "p2" :pawn "p2"} 0 0]
-                                        [0 0 0]]
-                                :phase :core
-                                :player-id-in-turn "p1"
-                                :last-action {:action        :move-pawn
-                                              :pawn-location [0 0]})
-                   (is-last-action? :move-pawn [0 0]))))}
-  [game action pawn-location]
-  (let [last-action (:last-action game)]
-    (and (= (:action last-action) action)
-         (= (:pawn-location last-action) pawn-location))))
-
-
-(defn register-last-action
-  "Memorize the last action taken so that it can not be done twice."
-  {:test (fn []
-           (is (-> (create-game :phase :core)
-                   (register-last-action :spawn-pawn [0 1])
-                   (is-last-action? :spawn-pawn [0 1]))))}
-  [game action pawn-location]
-  (assoc game :last-action {:action        action
-                            :pawn-location pawn-location}))
 
 
 (defn adjacent?
