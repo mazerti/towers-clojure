@@ -3,6 +3,8 @@
   (:require
     [towers.engine.construct :refer [apply-to-all-players
                                      create-game
+                                     dissoc-square-attribute
+                                     get-square
                                      get-square-attribute
                                      get-dimensions
                                      get-player
@@ -631,3 +633,66 @@
        (= (get-square-attribute game :pawn from) player-id)
        (adjacent? from to)
        (is-square-accessible-from game player-id from to)))
+
+
+(defn add-to-captures
+  "Add given pawn to the count of given player's captures."
+  {:test (fn []
+           (is= (-> (create-game)
+                    (add-to-captures "p1" "p2")
+                    (get-player "p1")
+                    (:captures))
+                {"p2" 1})
+           (is= (-> (create-game :players [{:id "p1"} {:id "p2" :captures {"p1" 1}}])
+                    (add-to-captures "p2" "p1")
+                    (get-player "p2")
+                    (:captures))
+                {"p1" 2})
+           (is= (-> (create-game :players [{:id "p1"} {:id "p2" :captures {"p1" 2}} {:id "p3"}])
+                    (add-to-captures "p2" "p3")
+                    (get-player "p2")
+                    (:captures))
+                {"p1" 2
+                 "p3" 1}))}
+  [game player-id captured-pawn]
+  (update-player game :captures player-id (fn [captures]
+                                            (update captures captured-pawn (fnil inc 0)))))
+
+
+(defn capture-pawn
+  "Given player capture pawn at given location.
+  If there is no pawn on the square, nothing happens."
+  {:test (fn []
+           (-> (create-game :board [[{:pawn "p1"} {:pawn "p2"} 0]]
+                            :players [{:id "p1"}
+                                      {:id "p2"}
+                                      {:id "p3" :captures {"p1" 1}}])
+               (capture-pawn "p3" [0 0]))
+           (let [game (create-game :board [[{:pawn "p1"} {:pawn "p2"} 0]]
+                                   :players [{:id "p1"}
+                                             {:id "p2"}
+                                             {:id "p3" :captures {"p1" 1}}])]
+             (let [game (capture-pawn game "p3" [0 2])]
+               (is= (-> (get-player game "p3")
+                        (:captures))
+                    {"p1" 1}))
+             (let [game (capture-pawn game "p3" [0 0])]
+               (is-not (-> (get-square game [0 0])
+                           (contains? :pawn)))
+               (is= (-> (get-player game "p3")
+                        (:captures)
+                        (get "p1"))
+                    2))
+             (let [game (capture-pawn game "p3" [0 1])]
+               (is (nil? (get-square-attribute game :pawn [0 1])))
+               (is= (-> (get-player game "p3")
+                        (:captures)
+                        (get "p2"))
+                    1))))}
+  [game player-id location]
+  (let [captured-pawn (get-square-attribute game :pawn location)]
+    (if-not captured-pawn
+      game
+      (-> game
+          (dissoc-square-attribute :pawn location)
+          (add-to-captures player-id captured-pawn)))))
