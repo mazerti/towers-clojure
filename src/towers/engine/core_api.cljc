@@ -12,10 +12,10 @@
                                 can-spawn-tower?
                                 can-spawn-pawn?
                                 claim-square
+                                end-action
                                 end-turn
                                 player-in-turn?
                                 register-player-order
-                                register-last-action
                                 summon-pawn]]
     [ysera.error :refer [error]]
     [ysera.test :refer [error? is is=]]))
@@ -113,10 +113,9 @@
   [game player-id location]
   (when-not (can-spawn-pawn? game player-id location)
     (error "Invalid play."))
-  (as-> (summon-pawn game player-id location) $
-        (if (:last-action $)
-          (end-turn $)
-          (register-last-action $ :spawn-pawn location))))
+  (-> game
+      (summon-pawn player-id location)
+      (end-action :spawn-pawn location)))
 
 
 (defn build-tower
@@ -151,10 +150,9 @@
   [game player-id location]
   (when-not (can-build-tower? game player-id location)
     (error "Invalid play."))
-  (as-> (place-tower game location) $
-        (if (:last-action $)
-          (end-turn $)
-          (register-last-action $ :build-tower location))))
+  (-> game
+      (place-tower location)
+      (end-action :build-tower location)))
 
 
 (defn move-pawn
@@ -201,7 +199,7 @@
                (is= (get-square-attribute game :controlled-by [2 1])
                     "p1")
                (is= (-> (get-player game "p1")
-                        (:captured-pawn))
+                        (:captures))
                     {"p2" 1}))
              ; Can't move into a non-lower defended square
              (error? (move-pawn game "p1" [1 1] [1 2]))
