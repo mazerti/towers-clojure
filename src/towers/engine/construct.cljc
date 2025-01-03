@@ -1,6 +1,6 @@
 (ns towers.engine.construct
   "A namespace for the non-gameplay related building blocks of the game."
-  (:require [ysera.test :refer [is is=]]))
+  (:require [ysera.test :refer [is is-not is=]]))
 
 
 (def default-settings
@@ -307,6 +307,18 @@
   (if (fn? function-or-val)
     (apply update-in game [:board location attribute] function-or-val args)
     (assoc-in game [:board location attribute] function-or-val)))
+
+
+(defn dissoc-square-attribute
+  "Dissociate a square attribute."
+  ; TODO: find where this function would have been useful and replace current implementation
+  {:test (fn []
+           (is-not (-> (create-game :board [[{:non-existing-key :a} 0 0]])
+                       (dissoc-square-attribute :non-existing-key [0 0])
+                       (get-square [0 0])
+                       (contains? :non-existing-key))))}
+  [game attribute location]
+  (update-in game [:board location] (fn [square] (dissoc square attribute))))
 
 
 (defn get-player-ids
