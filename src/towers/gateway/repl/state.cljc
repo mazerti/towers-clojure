@@ -31,3 +31,9 @@
   "During the core phase, given player build a tower on one of its pawns' location."
   [player-id location]
   (swap! game-atom towers.engine.core-api/build-tower player-id location))
+
+
+(defn move-pawn!
+  "During the core phase, given player move one of its pawns to a neighboring square."
+  [player-id from to]
+  (swap! game-atom towers.engine.core-api/move-pawn player-id from to))
