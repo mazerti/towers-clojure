@@ -5,12 +5,16 @@
                                      get-player
                                      get-square
                                      get-square-attribute
-                                     update-player]]
+                                     update-player
+                                     update-square]]
     [towers.engine.core :refer [place-tower
                                 can-build-tower?
+                                can-move-pawn?
                                 can-pick-start?
                                 can-spawn-tower?
                                 can-spawn-pawn?
+                                capture-pawn
+                                change-pawn-position
                                 claim-square
                                 end-action
                                 end-turn
@@ -218,4 +222,11 @@
              (error? (move-pawn game "p1" [2 0] [3 0]))
              (error? (move-pawn game "p1" [1 0] [2 0]))
              (error? (move-pawn game "p1" [2 2] [3 2]))))}
-  [game player-id from to])
+  [game player-id from to]
+  (when-not (can-move-pawn? game player-id from to)
+    (error "Invalid play."))
+  (-> game
+      (capture-pawn player-id to)
+      (change-pawn-position player-id from to)
+      (update-square :controlled-by to player-id)
+      (end-action :move-pawn to)))
